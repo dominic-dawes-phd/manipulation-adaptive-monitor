@@ -1,0 +1,5 @@
+# M1: nominal success rates with shadow queries on. No perturbations.
+name: baseline
+tasks: [transfer_cube, insertion]
+split: baseline
+stages: [baseline, baseline_report]

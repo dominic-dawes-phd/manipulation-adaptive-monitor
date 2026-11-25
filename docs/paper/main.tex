@@ -1,0 +1,67 @@
+\documentclass[11pt]{article}
+% Class-project draft. Swap in the venue style file (e.g., AAAI/CoRL) when targeting one.
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage[hyphens]{url}
+\usepackage[numbers]{natbib}
+
+\title{When to Look: Budgeted Scheduling of Expensive Failure Monitors\\for Action-Chunked Robot Policies}
+\author{Dominic Dawes\\University of Maryland, Baltimore County\\\texttt{ddawes2@umbc.edu}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Vision-language judges and world-model rollouts can detect failures of learned robot policies, but they are too expensive to run at every control step. Deployed systems therefore check at subtask boundaries or at hand-picked events such as gripper closures, which leaves failures in the middle of a subtask, such as an object knocked from the gripper during transport, unobserved until the next check.
+We study \emph{when} an expensive monitor should run under a fixed budget of checks per episode. We propose a trigger computed from signals the policy already produces: disagreement between consecutive action chunks, imminent gripper flips, and a maximum-gap timeout. Its threshold is set to meet the budget.
+Using frozen ACT policies in a simulated bimanual manipulation benchmark, we log every episode once, with ground-truth failure onsets from simulator state, and evaluate every schedule offline on the same episodes. We compare against always-on, fixed-rate, random, subtask-boundary and event-based schedules at equal budget, and measure whether conformal alarm thresholds keep their nominal false-alarm rate when a trigger selects the frames.
+TODO(results): one sentence each for H1--H3.
+\end{abstract}
+
+\section{Introduction}
+% 1. Expensive monitors exist and work; cost forces a schedule.
+% 2. Current practice: subtask boundaries (orchestrator success checks), fixed events (CARE, ContactGuard), fixed clocks. Blind spot: mid-subtask failures.
+% 3. Idea: the policy itself signals surprise (chunk disagreement) at no extra cost; use it to decide when to look.
+% 4. Calibration subtlety: score-dependent selection breaks nominal false-alarm guarantees.
+% 5. Contributions: (i) an equal-budget evaluation protocol with sim-labeled onsets and offline replay; (ii) a policy-derived trigger; (iii) a calibration audit under adaptive triggering.
+TODO(user): write from the outline above.
+
+\section{Problem Formulation}
+A frozen policy $\pi$ emits an action chunk $A_t \in \mathbb{R}^{H \times d}$ at step $t$. An expensive monitor $m$ can be evaluated on a grid $\Gamma_m$ and returns a score $s_m(t)$, with latency $\lambda_m$ steps. A schedule $S$ uses only information available at $t$ to select checks $C_S \subseteq \Gamma_m$. A check alarms if $s_m(c) \ge \eta_S$. Given a failure onset $o$, the detection step is $t^\ast = \min\{c \in C_S : c \ge o,\ s_m(c) \ge \eta_S\}$. We seek schedules that minimize detection delay $t^\ast - o$ and missed failures, subject to $\mathbb{E}|C_S| \le B$ and a false-alarm level $\alpha$.
+
+\section{Method}
+\paragraph{Chunk disagreement.}
+For a query stride $s$ and near-term window $M$,
+\begin{equation}
+e_g(t) = \frac{1}{M'}\sum_{j=0}^{M'-1} \left\| \frac{A_t[j,g] - A_{t-s}[j+s,g]}{\sigma_g} \right\|_2, \qquad d(t) = \max_g e_g(t),
+\end{equation}
+over action groups $g$ (each arm's joints and gripper), with $\sigma_g$ from nominal rollouts.
+\paragraph{Trigger.} TODO: OR-composition of $\tilde d(t) \ge \tau$, gripper flip, timeout $G$; $\tau$ by bisection to meet $B$.
+\paragraph{Stream calibration.} TODO: conformal quantile over the frames the schedule selects on nominal calibration episodes.
+
+\section{Experimental Setup}
+\paragraph{Simulator and policies.} gym-aloha transfer-cube and insertion~\citep{zhao2023act}, frozen LeRobot ACT checkpoints~\citep{cadene2024lerobot}. TODO: measured baseline success.
+\paragraph{Perturbations and labels.} Knock, slip, nudge, peg misalignment; onsets from simulator contact and pose predicates.
+\paragraph{Monitors.} Qwen2.5-VL-7B judge~\citep{bai2025qwen25vl} served with vLLM~\citep{kwon2023vllm}; a world-model residual on frozen image features~\citep{oquab2024dinov2,zhou2024dinowm}.
+\paragraph{Schedules.} Always-on, fixed-$k$, random, subtask boundary (privileged), CARE~\citep{care2026}, ContactGuard~\citep{contactguard2026}, ours.
+\paragraph{Metrics and statistics.} Recall, raw and effective delay, per-check and per-episode false-alarm rate, checks per episode; paired bootstrap over episodes.
+
+\section{Results}
+\paragraph{H1: efficiency.} TODO: Fig.~1 (recall and delay vs budget).
+\paragraph{H2: mid-subtask failures.} TODO: delay CDFs for knock and slip at matched budget.
+\paragraph{H3: calibration.} TODO: measured vs nominal false-alarm rates for the four calibrations.
+\paragraph{Ablations.} TODO.
+
+\section{Related Work}
+TODO: condense \texttt{related\_works.md}: runtime failure detection~\citep{xu2025faildetect,romer2025fiper,agia2024sentinel}; event-triggered checking~\citep{care2026,contactguard2026,checkvla2026}; orchestration~\citep{gemini2025robotics15,orchestrating2026}; conformal calibration~\citep{vovk2005alrw,angelopoulos2021gentle,adaptivetrigger2026}.
+
+\section{Limitations}
+Simulation only; passive monitors (no recovery in the loop); a privileged boundary schedule; an always-on VLM is not physically realizable at 50\,Hz; consistency signals are blind to slow common-mode drift~\citep{mediante2026}.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+\end{document}

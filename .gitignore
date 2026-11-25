@@ -1,0 +1,14 @@
+.venv/
+.venv-vlm/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+runs/*
+!runs/README.md
+docs/paper/*.aux
+docs/paper/*.log
+docs/paper/*.bbl
+docs/paper/*.blg
+docs/paper/*.out
+docs/paper/*.pdf

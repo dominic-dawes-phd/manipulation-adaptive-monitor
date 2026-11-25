@@ -1,0 +1,56 @@
+[project]
+name = "amon"
+version = "0.2.0"
+description = "Budgeted scheduling of expensive failure monitors for action-chunked robot policies"
+requires-python = ">=3.10,<3.12"
+# Pinned in M0 (decision D-11): the stack contemporary with the ACT checkpoints.
+# lerobot 0.3.3 is the last release with normalization stored inside the policy, so the
+# checkpoints load as published; gym-aloha 0.1.1 is the MuJoCo 2.3 physics they were evaluated on.
+dependencies = [
+  "lerobot==0.3.3",
+  "gym-aloha==0.1.1",
+  "gymnasium==0.29.1",
+  "mujoco==2.3.7",
+  "dm-control==1.0.14",
+  "torch==2.7.1",
+  "torchvision==0.22.1",
+  "numpy==2.2.6",
+  "scipy",
+  "pyyaml",
+  "requests",
+  "imageio[ffmpeg]",
+  "matplotlib",
+  "pandas",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+# pynput (teleoperation only) needs evdev, which compiles against kernel headers.
+override-dependencies = ["pynput ; sys_platform == 'never'"]
+# Releases from lerobot 0.3.3's own era; its ranges have no upper bound on these.
+constraint-dependencies = [
+  "huggingface-hub<0.36",
+  "opencv-python-headless<4.13",
+  "av<16",
+  "pandas<3",
+  "setuptools<81",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "D", "B", "UP"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
