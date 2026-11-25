@@ -52,6 +52,8 @@ Schedules, budgets, calibrations and ablations are offline factors: they cost no
 | insertion | none / calib, test | ≈750 / 300 | Q4 in decisions.md |
 | insertion | peg_misalign, knock / test | 200 each | |
 
+Perturbation yield on the 10 dev review episodes each (M2, `runs/review_20261125-172434`): slip 9 failures, all drops 3-6 steps after the slip; knock (transfer_cube) 8 failures, 7 of them drops 7-9 steps after the push, 2 recovered (replays put the drop rate at 42%, D-18); nudge 7 failures of 8 fired, `grasp_miss` 15-21 steps after the nudge, 2 not fired; insertion knock 7 drops, 1 not fired, 1 natural drop before the knock; peg_misalign 9 failures but 6 unlabeled (Q7). If knock drops stay near 40-70%, 300-400 knock episodes are needed for about 200 labeled drops; the pilot measures the yields on test seeds before the main sweep is resized. Stored episodes take about 4.7 MB each (frames and chunks), about 16 GB for the main sweep.
+
 The rows sum to 1,700 transfer-cube and 1,450 insertion episodes. Measured in M1 with three processes on one laptop GPU, shadow queries on and without writing frames: about 5.8 s per transfer_cube episode and 9.5 s per insertion episode of wall time, so about 2.7 h and 3.8 h for these counts. Perturbed episodes run the full 400 steps more often, and frame storage adds time; the pilot re-measures both.
 
 ## 6. Responses and analysis plan
@@ -68,3 +70,7 @@ The rows sum to 1,700 transfer-cube and 1,450 insertion episodes. Measured in M1
 | Date | Run dir | Version | Spec | Hardware | Notes |
 |---|---|---|---|---|---|
 | Nov 25, 2026 | `runs/baseline_20261125-103116` | 0.2.00 (uncommitted tree on dc666ed) | `sweeps/baseline.yaml`, seeds 1000-1199, shadow queries on | RTX 4070 Laptop; rendering D3D12 AMD 780M (WSL2) | M1. transfer_cube 161/200 = 80.5% [74.5, 85.4]; published on the same seeds 167/200 = 83.5% (discordant 2 vs 8, exact McNemar p = 0.109); card 83.0%. insertion 40/200 = 20.0% [15.0, 26.1]; card 20.6%. 0 failed episodes. |
+| Nov 25, 2026 | `runs/perturb_calibration_20261125-165042`, `runs/knock_release_20261125-170035` | 0.2.0 (uncommitted) | `scripts/calibrate_perturbations.py`, 40 replayed baseline successes per setting | laptop | Strength sweeps by exact replay (D-18, D-19). Not reported. |
+| Nov 25, 2026 | `runs/review_20261125-170939`, `runs/nudge_dev_*_20261125-1718*` | 0.2.0 (uncommitted) | `sweeps/review.yaml`; nudge variants by `overrides` | laptop | First review set and live nudge check (D-19). Superseded. |
+| Nov 25, 2026 | `runs/review_20261125-172434` | 0.3.00 (ed0b7ca, clean) | `sweeps/review.yaml`, dev seeds 2000-2009, video | laptop | M2 review set: 50 episodes, reels in `figures/`. Outcomes identical to the first set. Awaiting the user's visual check. |
+| Nov 25, 2026 | `runs/smoke_20261125-172434` | 0.3.00 (ed0b7ca, clean) | `sweeps/smoke.yaml`, stage rollout | laptop | M2 acceptance: 18 episodes written end to end, none failed to run. |
