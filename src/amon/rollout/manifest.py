@@ -9,6 +9,7 @@ from pathlib import Path
 import mujoco
 import torch
 
+from amon.rollout.runner import FRAME_RESIZE
 from amon.settings import REPO_ROOT, Settings
 from amon.version import AMON_VERSION
 
@@ -37,6 +38,7 @@ def write_manifest(run_dir: Path, spec: dict, settings: Settings) -> None:
         "gpu": torch.cuda.get_device_name() if torch.cuda.is_available() else "cpu",
         "gl_renderer": gl_renderer(),
         "packages": {name: version(name) for name in TRACKED_PACKAGES},
+        "frame_resize": FRAME_RESIZE,
         "models": {task.policy_repo: task.policy_revision for task in settings.tasks.values()},
         "spec": spec,
     }

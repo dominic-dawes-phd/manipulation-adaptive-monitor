@@ -22,9 +22,17 @@ def test_split_seed_ranges() -> None:
     """Evaluation splits keep their documented seed ranges."""
     splits = load_settings().splits
     assert splits["train"] == (0, 500)
-    assert splits["calib"] == (10000, 10300)
+    assert splits["calib"] == (10000, 11000)
     assert splits["test"] == (20000, 20300)
     assert splits["baseline"] == (1000, 1200)
+
+
+def test_overrides_replace_entries_and_reject_unknown_ones() -> None:
+    """A sweep spec can change one value; a typo is an error, not a silent no-op."""
+    settings = load_settings(overrides={"perturbations.nudge.offset_m": 0.05})
+    assert settings.perturbations["nudge"].offset_m == 0.05
+    with pytest.raises(KeyError):
+        load_settings(overrides={"perturbations.nudge.ofset_m": 0.05})
 
 
 def test_wilson_interval_known_value() -> None:

@@ -10,6 +10,14 @@ What changed in the code, data formats and experiment tooling, newest first. Rat
 
 Each entry is 3–6 bullets and names its date.
 
+## [0.3.00] M2: labels, perturbations, episode store, 3070 server runner (Nov 25, 2026)
+- `sim/state.py`, `sim/labels.py`, `sim/perturb.py`: privileged state, failure labels (D-16) and the four perturbations (D-18, D-19); `rollout/store.py` writes the spec section 2 format with frame-aligned arrays and `held`/`contact` (D-17); `rollout/sweep.py` and the `rollout` stage expand sweep cells into seeded episodes, resumable and sharded.
+- Physics substep hook in `AlohaSim.step`, used by the knock to stop pushing when the grip breaks; top camera rendered alone (bit-identical to M1, about 25% faster).
+- `scripts/calibrate_perturbations.py` (strength sweeps by exact replay of baseline actions), `scripts/verify_against_baseline.py`, `experiments/viz.py` (review reels and contact sheets), `configs/sweeps/review.yaml`.
+- `base.yaml`: `hold_margin_m`, `drop_debounce_steps`, `handover_window` 200, knock 5 N with release cutoff, nudge 5 cm at a 6 cm radius, `dev` split, `calib` widened to 10000-10999.
+- Sweep specs accept `overrides:` (dotted base.yaml keys, unknown keys rejected).
+- `run_3070_server.sh` and `requirements/server_3070.txt` (hash-locked, identical versions to `requirements/laptop_4070.txt`); `run_local.sh` can put several processes on one GPU and stops after a failing stage.
+
 ## [0.2.00] M0 and M1: environment, policy adapter, baseline (Nov 25, 2026)
 - Pinned the simulation stack in `pyproject.toml` (D-11) and added the package skeleton: `settings.py`, `version.py`, `sim/env.py`, `policy/act.py`, `rollout/{runner,manifest,baseline}.py`, `eval/stats.py` (Wilson, exact McNemar).
 - `configs/base.yaml`: names, units, episode length and success reward verified against gym-aloha 0.1.1 and the checkpoints; checkpoint revisions pinned; per-object rest heights and `splits.baseline` added.

@@ -51,6 +51,41 @@ class RobotSettings:
 
 
 @dataclass(frozen=True)
+class LabelSettings:
+    """Thresholds of the failure labels (spec section 4)."""
+
+    hold_margin_m: float
+    drop_debounce_steps: int
+    grasp_miss_window: int
+    handover_window: int
+    insert_window: int
+    mid_subtask_margin: int
+
+
+@dataclass(frozen=True)
+class PerturbationSettings:
+    """Parameters of one perturbation; each type reads its own subset (spec section 5)."""
+
+    delay_max: int
+    finger_geoms: tuple[str, ...]
+    steps: int = 0
+    force_n: float = 0.0
+    direction: str = "random"
+    friction_scale: float = 1.0
+    offset_m: float = 0.0
+    trigger_radius_m: float = 0.0
+    angle_deg: tuple[float, float] = (0.0, 0.0)
+
+
+@dataclass(frozen=True)
+class RenderSettings:
+    """What the episode store keeps of each frame."""
+
+    store_size: tuple[int, int]
+    store_video: bool
+
+
+@dataclass(frozen=True)
 class StatsSettings:
     """Resampling and interval parameters."""
 
@@ -65,20 +100,39 @@ class Settings:
     control_hz: int
     tasks: dict[str, TaskSettings]
     robot: RobotSettings
+    render: RenderSettings
     splits: dict[str, tuple[int, int]]
+    perturbed_test_start: int
+    labels: LabelSettings
+    perturbations: dict[str, PerturbationSettings]
     stats: StatsSettings
 
 
-def load_settings(path: Path = BASE_CONFIG_PATH) -> Settings:
+def load_settings(
+    path: Path = BASE_CONFIG_PATH, overrides: dict[str, object] | None = None
+) -> Settings:
     """Loads and validates the base configuration.
 
     Args:
         path: YAML file to read.
+        overrides: Values that replace base.yaml entries, keyed by dotted path, for example
+            {"perturbations.nudge.offset_m": 0.05}. A sweep spec's `overrides` go here.
 
     Returns:
         The typed settings.
+
+    Raises:
+        KeyError: If an override names an entry that base.yaml does not have.
     """
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    for dotted, value in (overrides or {}).items():
+        *parents, leaf = dotted.split(".")
+        section = raw
+        for key in parents:
+            section = section[key]
+        if leaf not in section:
+            raise KeyError(f"override {dotted!r} is not an entry of {path.name}")
+        section[leaf] = value
     robot = raw["robot"]
     settings = Settings(
         control_hz=raw["project"]["control_hz"],
@@ -90,10 +144,22 @@ def load_settings(path: Path = BASE_CONFIG_PATH) -> Settings:
             finger_geoms={arm: tuple(geoms) for arm, geoms in robot["finger_geoms"].items()},
             reward_finger_geoms=dict(robot["reward_finger_geoms"]),
         ),
+        render=RenderSettings(
+            store_size=tuple(raw["render"]["store_size"]),
+            store_video=raw["render"]["store_video"],
+        ),
         splits={
             name: (bounds[0], bounds[1])
             for name, bounds in raw["splits"].items()
             if isinstance(bounds, list)
+        },
+        perturbed_test_start=raw["splits"]["perturbed_test_start"],
+        labels=LabelSettings(**raw["labels"]),
+        perturbations={
+            name: PerturbationSettings(
+                **{**values, "finger_geoms": tuple(robot["finger_geoms"]["right"])}
+            )
+            for name, values in raw["perturbations"].items()
         },
         stats=StatsSettings(**raw["stats"]),
     )

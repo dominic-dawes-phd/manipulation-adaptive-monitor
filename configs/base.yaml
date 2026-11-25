@@ -58,22 +58,24 @@ render:
 splits:                         # seed ranges, half-open [start, end)
   train: [0, 500]
   baseline: [1000, 1200]        # M1 success rates only; seeds of the published evaluation
-  calib: [10000, 10300]
+  dev: [2000, 2200]             # review videos and perturbation tuning; never reported
+  calib: [10000, 11000]         # insertion needs 750 (DOE section 5)
   test: [20000, 20300]
   perturbed_test_start: 30000   # per perturbation: start + 1000 * perturbation_index
 
 labels:
-  hold_height_m: 0.02
+  hold_margin_m: 0.02           # held = finger contact + this far above rest_height_m (D-16)
+  drop_debounce_steps: 5        # firm grasps lose contact for 1-2 steps
   grasp_miss_window: 10
-  handover_window: 120
+  handover_window: 200          # successful handovers take 77-181 steps (D-16)
   insert_window: 150
   mid_subtask_margin: 25
 
-perturbations:
-  knock: {mode: force, force_n: 20.0, steps: 3, delay_max: 30}
+perturbations:                  # knock, slip and nudge values: scripts/calibrate_perturbations.py
+  knock: {force_n: 5.0, steps: 10, direction: random, delay_max: 30}
   slip: {friction_scale: 0.01, steps: 20, delay_max: 20}
-  nudge: {offset_m: 0.03, trigger_radius_m: 0.05}
-  peg_misalign: {angle_deg: [10, 20]}
+  nudge: {offset_m: 0.05, trigger_radius_m: 0.06, delay_max: 0}
+  peg_misalign: {angle_deg: [10, 20], delay_max: 20}
 
 policy:
   shadow_query_stride: 1

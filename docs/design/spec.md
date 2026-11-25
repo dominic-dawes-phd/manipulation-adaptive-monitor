@@ -25,9 +25,12 @@ One directory per episode: `episodes/<task>/<perturbation>/<split>/ep_<seed:06d>
 | `chunks` | [T, H, 14] float16 | shadow-query chunk at each step; `chunks[t, j]` predicts the action for step t+j |
 | `act_latent` | [T, D] float16 | optional ACT encoder feature (probe / RND) |
 | `reward` | [T] int8 | env reward stage |
-| `phase` | [T] int8 | p_t |
-| `contact_left`, `contact_right` | [T] bool | gripper–object contact |
+| `phase` | [T] int8 | p_t = max(reward[:t]) |
+| `contact_left`, `contact_right` | [T] bool | gripper–object contact, any object |
+| `contact`, `held` | [T, K, 2] bool | per object and arm (left, right); held as in §4 |
 | `obj_pos` | [T, K, 3] float32 | positions of task objects (cube, or peg and socket) |
+
+Alignment (D-17): every array except `reward` describes frame t, before action t is applied; `reward[t]` is the outcome of action t.
 
 `meta.json`: episode id, task, perturbation name and sampled parameters, `perturb_step` (−1 if none), `success`, `onset_step` (−1 if none or unlabeled), `failure_type` (`none`, `drop`, `grasp_miss`, `handover_miss`, `insert_miss`, `unlabeled`), `boundary_steps` (list), seed, split, `sim_version`. Native-resolution video is optional (`video.mp4`, for viz only).
 
@@ -39,17 +42,17 @@ At every step t, the policy is also queried for a full chunk A_t ∈ ℝ^{H×14}
 
 ## 4. Failure onset labels
 
-A failure event is detected from sim state:
-- **drop:** the object is held (gripper contact and object height > h_hold) at t−1, and neither gripper holds it at t, before a success stage is reached. Onset = t.
+A failure event is detected from sim state. An object is *held* by an arm when either of its fingers touches it and its center is more than h_hold above its resting height (D-16).
+- **drop:** the object is held by some arm at t−1 and by no arm for the next d steps (`drop_debounce_steps`). Onset = t.
 - **grasp_miss:** a gripper close command (gripper channel crosses its close threshold) with no contact within W_g steps. Onset = the close-command step.
-- **handover_miss** (transfer_cube): stage 3 is not reached within W_h steps after stage 2, or the cube drops during the handover window. Onset = the first violating step.
+- **handover_miss** (transfer_cube): stage 3 or higher is not reached within W_h steps of the first stage 2 (a good handover skips stage 3). Onset = the first late step. A drop in the handover window is labeled `drop`.
 - **insert_miss** (insertion): both lifted, but stage 4 is not reached within W_i steps of stage 3. Onset = the stage-3 step (weak label; reported separately).
 
 For a failed episode, `onset_step` = the earliest event after which success is never reached. Failed episodes with no detected event get `failure_type = unlabeled`: they count toward recall but have no delay.
 
 Perturbed episodes that still succeed go in the **recovered** bucket. They are excluded from both recall and false-alarm rate, and reported on their own.
 
-All thresholds (h_hold, W_g, W_h, W_i) are in `configs/base.yaml`. Labels must be checked against videos (HANDOFF M2).
+All thresholds (h_hold, d, W_g, W_h, W_i) are in `configs/base.yaml`. Labels must be checked against videos (HANDOFF M2).
 
 ## 5. Perturbations
 
@@ -57,11 +60,13 @@ Each perturbation fires once per episode at a step sampled within a phase window
 
 | Name | Window condition | Mechanism | Defaults |
 |---|---|---|---|
-| knock | object held by right gripper, phase 2, before stage 3 | external force on the object body via `xfrc_applied` for n_k steps (or `teleport` mode: lateral offset, zero velocity) | 20 N lateral, 3 steps, random horizontal direction |
-| slip | phase 2, object rising | right finger geom friction scaled to ε for n_s steps, then restored | ε = 0.01, n_s = 20 |
-| nudge | phase 0, right gripper within r_n of the cube | teleport the cube Δ horizontally | Δ = 3 cm, random direction |
-| peg_misalign (insertion) | peg held, phase ≥ 2 | rotate the peg free joint about the gripper axis | 10–20° |
+| knock | object held by right gripper, phase 2 | horizontal force on the object body via `xfrc_applied`, random direction, stopped at the first physics substep pair without finger contact or after n_k steps (D-18) | 5 N, n_k = 10 |
+| slip | phase 2, object held and rising | right finger geom friction scaled to ε and geom priority raised for n_s steps, then restored (D-19) | ε = 0.01, n_s = 20 |
+| nudge | phase 0, no contact, right finger midpoint within r_n of the object | teleport the object Δ horizontally, resampling the direction if it creates a contact | Δ = 5 cm, r_n = 6 cm |
+| peg_misalign (insertion) | peg held by right gripper, phase 2 | rotate the peg about the finger closing axis, around the pinch point | 10–20°, random sign |
 | none | — | — | — |
+
+Delays D (`delay_max`): knock 30, slip 20, nudge 0, peg_misalign 20. Parameters were set by `scripts/calibrate_perturbations.py` on baseline seeds and checked on `dev` review videos. A perturbation whose window never opens leaves `perturb_step = −1`; such episodes are reported as "not fired" and excluded from perturbation metrics.
 
 ## 6. Expensive monitors
 

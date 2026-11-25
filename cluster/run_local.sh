@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Run a sweep on one multi-GPU machine without Slurm: one shard per GPU per stage.
 # Usage: bash cluster/run_local.sh configs/sweeps/pilot.yaml 0,1,2,3,4,5,6,7
+# Repeat a GPU to run several processes on it (0,0,1,1); the VLM stage uses each GPU once.
+# EGL_PER_GPU=1 also renders on the shard's GPU (native Linux only, not WSL).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 SPEC="$1"
 IFS=',' read -r -a GPUS <<< "${2:-0}"
-NUM_SHARDS="${#GPUS[@]}"
+mapfile -t UNIQUE_GPUS < <(printf "%s
+" "${GPUS[@]}" | sort -un)
 NAME="$(python -c "import yaml,sys; print(yaml.safe_load(open(sys.argv[1]))['name'])" "$SPEC")"
 RUN_DIR="runs/${NAME}_$(date +%Y%m%d-%H%M%S)"
 VLLM_BIN="${VLLM_BIN:-.venv-vlm/bin/vllm}"
@@ -31,6 +34,7 @@ run_stage_shard() {
     until curl -sf "http://127.0.0.1:$port/health" >/dev/null; do sleep 5; done
     endpoint_args=(--endpoint "http://127.0.0.1:$port/v1")
   fi
+  [[ "${EGL_PER_GPU:-0}" == 1 ]] && export MUJOCO_EGL_DEVICE_ID="$gpu"
   CUDA_VISIBLE_DEVICES="$gpu" python -m experiments.run --spec "$SPEC" --stage "$stage" \
     --run-dir "$RUN_DIR" --shard "$shard" --of "$shards" "${endpoint_args[@]}" 2>&1 \
     | tee "$log" | sed "s/^/[shard $shard $stage] /"
@@ -45,14 +49,21 @@ for STAGE in $STAGES; do
     run_stage_shard "$STAGE" 0 "${GPUS[0]}" 1
     continue
   fi
+  STAGE_GPUS=("${GPUS[@]}")
+  [[ "$STAGE" == "score_vlm" ]] && STAGE_GPUS=("${UNIQUE_GPUS[@]}")
   PIDS=()
-  for i in "${!GPUS[@]}"; do
-    run_stage_shard "$STAGE" "$i" "${GPUS[$i]}" "$NUM_SHARDS" &
+  for i in "${!STAGE_GPUS[@]}"; do
+    run_stage_shard "$STAGE" "$i" "${STAGE_GPUS[$i]}" "${#STAGE_GPUS[@]}" &
     PIDS+=($!)
   done
   FAILED=0
   for pid in "${PIDS[@]}"; do wait "$pid" || FAILED=1; done
-  [[ "$FAILED" == 1 ]] && echo "[run_local] stage $STAGE had failing shards; see $RUN_DIR/logs"
+  # Later stages would silently run on incomplete data, so stop here; finished episodes are kept.
+  if [[ "$FAILED" == 1 ]]; then
+    echo "[run_local] stage $STAGE had failing shards; see $RUN_DIR/logs"
+    bash cluster/collect.sh "$RUN_DIR"
+    exit 1
+  fi
 done
 
 bash cluster/collect.sh "$RUN_DIR"

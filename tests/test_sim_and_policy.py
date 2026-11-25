@@ -13,6 +13,7 @@ from amon.policy.act import ActAdapter, enable_determinism
 from amon.rollout.runner import EpisodeTrace, run_episode
 from amon.settings import load_settings
 from amon.sim.env import AlohaSim
+from amon.sim.state import StateReader
 
 SETTINGS = load_settings()
 SEED = 1001
@@ -41,11 +42,13 @@ def policy(task_name: str) -> ActAdapter:
 
 
 @pytest.fixture(scope="module")
-def traces(sim: AlohaSim, policy: ActAdapter) -> tuple[EpisodeTrace, EpisodeTrace]:
+def traces(task_name: str, sim: AlohaSim, policy: ActAdapter) -> tuple[EpisodeTrace, EpisodeTrace]:
     """Runs the same seed with shadow queries off and on."""
+    reader = StateReader(sim.physics, SETTINGS.tasks[task_name], SETTINGS)
+    size = SETTINGS.render.store_size
     return (
-        run_episode(sim, policy, SEED, shadow_queries=False),
-        run_episode(sim, policy, SEED, shadow_queries=True),
+        run_episode(sim, policy, reader, SEED, size, shadow_queries=False),
+        run_episode(sim, policy, reader, SEED, size, shadow_queries=True),
     )
 
 

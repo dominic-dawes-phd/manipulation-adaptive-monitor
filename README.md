@@ -76,6 +76,19 @@ bash cluster/run_local.sh configs/sweeps/pilot.yaml 0,1,2,3,4,5,6,7
 
 Shard logs go to `runs/<name>_<stamp>/logs/shard_<i>.out` and to the terminal with a `[shard i]` prefix. Ctrl+C stops every shard. Run it inside `tmux` for long sweeps (`tmux new -s amon`; detach with Ctrl+B D; reattach with `tmux attach -t amon`).
 
+## 3b. The 8x RTX 3070 server (no Slurm)
+
+One command installs the locked environment (`requirements/server_3070.txt`, same versions as the laptop) into `~/amon-3070`, checks that the GPUs are RTX 3070s, runs the test suite including the determinism tests, and runs the sweep with two processes per GPU:
+
+```bash
+git clone <this repository> && cd manipulation-adaptive-monitor
+bash run_3070_server.sh --check                       # first time: install and test only
+tmux new -s amon
+bash run_3070_server.sh configs/sweeps/pilot.yaml     # all GPUs; add 0,1,2,3 for some
+```
+
+`PROCS_PER_GPU`, `AMON_HOME` and `ALLOW_OTHER_GPU` are documented at the top of the script. Results go to `runs/` on the server; copy them back with `bash cluster/pack_results.sh runs/<run>`. They are never pooled with laptop runs (D-09).
+
 ## 4. University Slurm cluster
 
 1. Edit **only** `cluster/cluster.env`: account, cluster flag, GPU constraint, data directory (keep everything off a small home quota), time limit.
@@ -95,6 +108,14 @@ Shard logs go to `runs/<name>_<stamp>/logs/shard_<i>.out` and to the terminal wi
    ```
 
 Each stage (`rollout`, `score_vlm`, `train_wm`, `score_wm`, `evaluate`, `plot`) is its own array or job, chained with `--dependency=afterok`. Never pool cluster and workstation runs in one comparison (D-09).
+
+## 4b. Perturbation review (M2)
+
+```bash
+python -m experiments.run --spec configs/sweeps/review.yaml --stage rollout   # dev seeds, with video
+python -m experiments.viz --run runs/review_<stamp>     # figures/review_<task>_<perturbation>.mp4 and .png
+python scripts/calibrate_perturbations.py runs/baseline_<stamp> out.csv       # strength sweeps
+```
 
 ## 5. Analyze and visualize
 

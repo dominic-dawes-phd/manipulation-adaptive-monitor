@@ -17,13 +17,18 @@ from amon.policy.act import ActAdapter
 from amon.rollout.runner import run_episode
 from amon.settings import Settings, TaskSettings
 from amon.sim.env import AlohaSim
+from amon.sim.state import StateReader
 
 LOGGER = logging.getLogger(__name__)
 PROGRESS_INTERVAL = 10
 
 
 def run_baseline(
-    task: TaskSettings, seeds: list[int], out_dir: Path, shadow_queries: bool
+    task: TaskSettings,
+    seeds: list[int],
+    out_dir: Path,
+    settings: Settings,
+    shadow_queries: bool,
 ) -> list[int]:
     """Rolls out every seed that has no saved trace yet.
 
@@ -31,6 +36,7 @@ def run_baseline(
         task: Task to run.
         seeds: Episode seeds of this shard.
         out_dir: Where `ep_<seed>.npz` files go.
+        settings: Global settings.
         shadow_queries: Whether to query a chunk at every step.
 
     Returns:
@@ -40,11 +46,14 @@ def run_baseline(
     pending = [seed for seed in seeds if not _trace_path(out_dir, seed).exists()]
     sim = AlohaSim(task)
     policy = ActAdapter(task)
+    reader = StateReader(sim.physics, task, settings)
     failed: list[int] = []
     start = time.monotonic()
     for index, seed in enumerate(pending, start=1):
         try:
-            trace = run_episode(sim, policy, seed, shadow_queries)
+            trace = run_episode(
+                sim, policy, reader, seed, settings.render.store_size, shadow_queries
+            )
         except Exception:  # A broken episode must not stop the shard.
             LOGGER.exception("EPISODE_FAILED %s/none/baseline/ep_%06d", task.name, seed)
             failed.append(seed)

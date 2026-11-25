@@ -12,11 +12,12 @@ import yaml
 from amon.policy.act import enable_determinism
 from amon.rollout.baseline import report_baseline, run_baseline
 from amon.rollout.manifest import write_manifest
+from amon.rollout.sweep import expand_cells, run_rollouts
 from amon.settings import REPO_ROOT, Settings, load_settings
 from amon.version import AMON_VERSION
 
 LOGGER = logging.getLogger("experiments.run")
-STAGES = ("baseline", "baseline_report")
+STAGES = ("baseline", "baseline_report", "rollout")
 
 
 def main() -> int:
@@ -33,7 +34,7 @@ def main() -> int:
     parser.add_argument("--shard", type=int, default=0)
     parser.add_argument("--of", type=int, default=1)
     parser.add_argument(
-        "--limit", type=int, help="run only the first N seeds (plumbing checks, never results)"
+        "--limit", type=int, help="run only the first N episodes (plumbing checks, never results)"
     )
     arguments = parser.parse_args()
     logging.basicConfig(
@@ -43,8 +44,8 @@ def main() -> int:
         force=True,  # dm_control installs a root handler on import
     )
 
-    settings = load_settings()
     spec = yaml.safe_load(arguments.spec.read_text(encoding="utf-8"))
+    settings = load_settings(overrides=spec.get("overrides"))
     run_dir = _prepare_run_dir(arguments.run_dir, arguments.name or spec["name"], arguments.spec)
     enable_determinism()
     write_manifest(run_dir, spec, settings)
@@ -65,6 +66,10 @@ def main() -> int:
             failed += _run_baseline_stage(
                 settings, spec, run_dir, arguments.shard, arguments.of, arguments.limit
             )
+        elif stage == "rollout":
+            keys = expand_cells(spec, settings)[: arguments.limit][arguments.shard :: arguments.of]
+            video = spec.get("store_video", settings.render.store_video)
+            failed += len(run_rollouts(keys, run_dir, settings, video))
         elif stage == "baseline_report":
             summary = report_baseline(settings, spec["tasks"], run_dir)
             (run_dir / "eval" / "baseline_summary.txt").write_text(summary + "\n", encoding="utf-8")
@@ -84,7 +89,11 @@ def _run_baseline_stage(
     for name in spec["tasks"]:
         failed += len(
             run_baseline(
-                settings.tasks[name], seeds, run_dir / "baseline" / name, shadow_queries=True
+                settings.tasks[name],
+                seeds,
+                run_dir / "baseline" / name,
+                settings,
+                shadow_queries=True,
             )
         )
     return failed
@@ -94,7 +103,7 @@ def _prepare_run_dir(existing: Path | None, name: str, spec_path: Path) -> Path:
     """Returns the run folder, creating a stamped one when none was given."""
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     run_dir = existing or REPO_ROOT / "runs" / f"{name}_{stamp}"
-    for child in ("eval", "logs"):
+    for child in ("episodes", "eval", "figures", "logs"):
         (run_dir / child).mkdir(parents=True, exist_ok=True)
     if not (run_dir / "spec.yaml").exists():
         shutil.copyfile(spec_path, run_dir / "spec.yaml")
