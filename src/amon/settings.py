@@ -108,6 +108,25 @@ class TriggerSettings:
 
 
 @dataclass(frozen=True)
+class VlmSettings:
+    """VLM judge served by vLLM (spec section 6.1)."""
+
+    model: str
+    fallback_model: str
+    grid_stride: int
+    max_pixels: int
+    temperature: float
+    endpoint: str
+    sanity_auroc_gate: float
+    top_logprobs: int
+    concurrency: int
+    request_timeout_s: float
+    max_model_len: int
+    max_num_seqs: int
+    gpu_memory_utilization: float
+
+
+@dataclass(frozen=True)
 class Settings:
     """All parameters used by the implemented milestones."""
 
@@ -121,6 +140,7 @@ class Settings:
     perturbations: dict[str, PerturbationSettings]
     stats: StatsSettings
     trigger: TriggerSettings
+    vlm: VlmSettings
 
 
 def load_settings(
@@ -178,6 +198,7 @@ def load_settings(
         },
         stats=StatsSettings(**raw["stats"]),
         trigger=TriggerSettings(**raw["trigger"]),
+        vlm=VlmSettings(**raw["monitors"]["vlm"]),
     )
     _validate(settings)
     return settings

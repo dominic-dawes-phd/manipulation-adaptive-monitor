@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from math import sqrt
 
 import numpy as np
-from scipy.stats import binomtest, norm
+from scipy.stats import binomtest, norm, rankdata
 
 
 @dataclass(frozen=True)
@@ -59,3 +59,23 @@ def exact_mcnemar(first: np.ndarray, second: np.ndarray) -> PairedOutcome:
     discordant = only_first + only_second
     p_value = float(binomtest(only_first, discordant).pvalue) if discordant else 1.0
     return PairedOutcome(only_first, only_second, p_value)
+
+
+def auroc(scores: np.ndarray, positive: np.ndarray) -> float:
+    """Returns the area under the ROC curve, with ties counted as one half.
+
+    Args:
+        scores: [N] higher means more likely positive.
+        positive: [N] bool labels; both classes must be present.
+
+    Returns:
+        The Mann-Whitney estimate of P(score of a positive > score of a negative).
+    """
+    positives = int(positive.sum())
+    negatives = len(positive) - positives
+    if positives == 0 or negatives == 0:
+        raise ValueError("auroc needs both classes")
+    ranks = rankdata(scores)
+    return float(
+        (ranks[positive].sum() - positives * (positives + 1) / 2) / (positives * negatives)
+    )

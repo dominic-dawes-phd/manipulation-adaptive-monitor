@@ -10,6 +10,13 @@ What changed in the code, data formats and experiment tooling, newest first. Rat
 
 Each entry is 3–6 bullets and names its date.
 
+## [1.1.00] M3 VLM judge and sanity gate tooling (Nov 26, 2026)
+- `monitors/vlm.py`: client for a vLLM OpenAI-compatible server; score = P(No) / (P(Yes) + P(No)) from first-token logprobs, case and whitespace variants pooled; cache by (model, prompt, frame) in JSON lines; identical frames sent once; failed requests logged and scored NaN, never cached.
+- `scripts/serve_vlm.sh` (separate `~/amon/venv-vlm`, vLLM 0.34.0; `requirements/vlm_freeze.txt`), `scripts/vlm_sanity.py` (paired frame set from dev review episodes and their unperturbed counterparts, blind contact sheet, AUROC and latency), `eval/stats.py: auroc`.
+- `base.yaml`: `monitors.vlm` serving limits for 8 GB GPUs (`max_model_len` 1024, `max_num_seqs` 4, `gpu_memory_utilization`), `top_logprobs`, `concurrency`, `request_timeout_s`; `VlmSettings`.
+- `configs/sweeps/vlm_gate_448.yaml`: the review seeds re-rendered with 448 px frames for the gate.
+- Preliminary gate result (sim-proposed labels): no model reaches AUROC 0.75 (D-24).
+
 ## [1.0.00] Perturbation-aware failure labels, Q7 and Q8 (Nov 26, 2026)
 - MAJOR: `label_failure` takes the perturbation and `perturb_step`. An event visible before the first perturbed frame gives `failed_before_perturbation` (Q8); no event within `labels.perturbation_event_window` = 50 steps of the perturbation gives `failure_type` = the perturbation name with onset `perturb_step + 1` (Q7). Episodes stored by earlier versions carry the old labels; regenerate before comparing.
 - On the M2 review episodes, the new rules relabel 11 of 50: 5 `unlabeled` and 2 late drops of peg_misalign, 1 late `handover_miss` of a knock and 2 late labels of nudges become perturbation-attributed, and insertion knock seed 2007 becomes `failed_before_perturbation`.

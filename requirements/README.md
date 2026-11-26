@@ -15,4 +15,10 @@ uv pip compile pyproject.toml --extra dev --python-version 3.11 \
   -c requirements/laptop_4070.txt -o requirements/server_3070.txt
 ```
 
-The VLM server has its own environment (D-08); its lock file is added in M3.
+The VLM server has its own environment (D-08), `~/amon/venv-vlm`, created with `uv venv --python 3.11` and `uv pip install vllm openai`. `vlm_freeze.txt` records it as first installed on the laptop (vLLM 0.34.0, torch 2.14.0 for CUDA 13.0, transformers 5.22.2). CUDA 13 needs NVIDIA driver 580 or newer, so check the 3070 server's driver before installing there. A hashed lock for the server follows once the M3 gate has picked the model.
+
+```bash
+uv venv --python 3.11 ~/amon/venv-vlm && source ~/amon/venv-vlm/bin/activate
+uv pip install -r requirements/vlm_freeze.txt
+scripts/serve_vlm.sh            # model, pixel cap and port from configs/base.yaml
+```

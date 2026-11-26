@@ -100,6 +100,14 @@ monitors:
     temperature: 0.0
     endpoint: http://127.0.0.1:8000/v1
     sanity_auroc_gate: 0.75
+    top_logprobs: 20             # first-token alternatives searched for Yes/No
+    concurrency: 8               # parallel requests; vLLM batches them on the server
+    request_timeout_s: 120
+    # vLLM serving limits for an 8 GB GPU: the 7B AWQ weights take 6.7 GiB, leaving ~0.1 GiB of
+    # KV cache at 90% utilization. One frame is 64 (224 px) to 256 (448 px) tokens plus ~100 text.
+    max_model_len: 1024
+    max_num_seqs: 4
+    gpu_memory_utilization: 0.95
   wm:
     encoder: dinov3_vits16       # fallback: dinov2_vits14
     history: 4

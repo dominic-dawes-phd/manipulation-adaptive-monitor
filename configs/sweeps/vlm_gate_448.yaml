@@ -1,0 +1,13 @@
+# M3 gate, step 2: the review episodes and their unperturbed counterparts (dev seeds 2000-2009)
+# with frames stored at 448 px instead of 224. The stored size does not change the policy input,
+# so episodes and frame pairs are identical to runs review_* and review_nominal_*. Dev only.
+name: vlm_gate_448
+tasks: [transfer_cube, insertion]
+cells:
+  - {perturbation: none, split: dev, episodes: 10}
+  - {perturbation: knock, split: dev, episodes: 10}
+  - {perturbation: slip, split: dev, episodes: 10, tasks: [transfer_cube]}
+  - {perturbation: nudge, split: dev, episodes: 10, tasks: [transfer_cube]}
+stages: [rollout]
+overrides:
+  render.store_size: [448, 448]
