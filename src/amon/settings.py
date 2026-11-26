@@ -94,6 +94,19 @@ class StatsSettings:
 
 
 @dataclass(frozen=True)
+class TriggerSettings:
+    """Cheap trigger features and firing rules (spec sections 8 and 9)."""
+
+    disagreement_window: int
+    disagreement_stride: int
+    gripper_lookahead: int
+    gripper_refractory: int
+    timeout_steps: int
+    min_gap_steps: int
+    progress_probe: bool
+
+
+@dataclass(frozen=True)
 class Settings:
     """All parameters used by the implemented milestones."""
 
@@ -106,6 +119,7 @@ class Settings:
     labels: LabelSettings
     perturbations: dict[str, PerturbationSettings]
     stats: StatsSettings
+    trigger: TriggerSettings
 
 
 def load_settings(
@@ -162,6 +176,7 @@ def load_settings(
             for name, values in raw["perturbations"].items()
         },
         stats=StatsSettings(**raw["stats"]),
+        trigger=TriggerSettings(**raw["trigger"]),
     )
     _validate(settings)
     return settings

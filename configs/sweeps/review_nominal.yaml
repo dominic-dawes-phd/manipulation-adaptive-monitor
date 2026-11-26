@@ -1,0 +1,8 @@
+# Unperturbed counterparts of the review episodes (same dev seeds 2000-2009). Identical to the
+# perturbed episodes up to the perturbation step, so they give a paired reference for the trigger
+# signal check (scripts/trigger_signal_check.py --nominal). Dev only, never reported.
+name: review_nominal
+tasks: [transfer_cube, insertion]
+cells:
+  - {perturbation: none, split: dev, episodes: 10}
+stages: [rollout]

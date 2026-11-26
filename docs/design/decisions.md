@@ -2,6 +2,13 @@
 
 Dated entries, newest first. Each entry states what was chosen, what was rejected and why. **PROPOSED** entries need the user's confirmation before they produce reported results.
 
+## Nov 26, 2026 (after M2: next steps and the trigger signal check)
+
+The user approved the plan for M3 onward: a trigger signal check first, then Q7/Q8, the VLM gate (M3), the world model (M4), and M5.
+
+- **D-21 The disagreement signal exists for transfer_cube, weakly for insertion (dev check, provisional).** `scripts/trigger_signal_check.py` compares d(t) in the 20 steps after each perturbation with the same steps of the same dev seed run without it (identical action sequences up to the perturbation in 46/46). Sigma is from the M1 baseline successes and the percentile reference from all unperturbed steps, both standing in for calib. Crossing the 0.99 percentile, perturbed vs. unperturbed same steps: nudge 8/8 vs 0/8 (1 step after the nudge, 19 before the `grasp_miss` onset); slip 9/10 vs 3/10 (median 6 steps; onset median 4); knock 6/10 vs 3/10 (median 8; onset median 9); insertion knock 2/9 vs 0/9 (0.95: 5/9 vs 1/9); peg_misalign 0/9 vs 0/9. Observation: perturbations fire during transport and handover, where unperturbed disagreement already sits near the 0.85-0.95 percentile, so a single global threshold separates poorly at 0.95. A step-conditioned percentile F̂_calib(d | t), which is causal, is a candidate (PROPOSED, decide in M5 on calib only). Consequences: H2's knock and slip claims stay testable; the insertion results will mostly rest on the max-gap timeout and gripper flips, and peg_misalign is expected to be a hard case for every policy-derived trigger. Not reported; the main results use calib sigma and test episodes.
+- **D-22 All reported episodes come from the 8x RTX 3070 server (ACCEPTED, user).** The laptop is for development and dev-split checks. Before the pilot, the server must reproduce a seed exactly twice and run the tests; D-09 forbids pooling with laptop runs.
+
 ## Nov 25, 2026 (M2, after the user's answers)
 
 The user accepted D-11, D-12 (for the laptop), D-13 and D-15, the label fixes of Q5 and Q6, and the insertion scope of Q4, and asked for a gentler knock (Q3) and a runner for the 8x RTX 3070 server.

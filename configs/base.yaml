@@ -82,7 +82,8 @@ policy:
   executor: from_checkpoint      # reproduce config.json eval behavior
 
 trigger:
-  disagreement_window: 20
+  disagreement_window: 20         # M, near-term steps compared between consecutive chunks
+  disagreement_stride: 1          # s, steps between the two compared shadow queries
   gripper_lookahead: 10
   gripper_refractory: 25
   timeout_steps: 100

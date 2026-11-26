@@ -10,6 +10,12 @@ What changed in the code, data formats and experiment tooling, newest first. Rat
 
 Each entry is 3–6 bullets and names its date.
 
+## [0.4.00] Trigger features and the dev signal check (Nov 26, 2026)
+- `trigger/features.py`: spec section 8 disagreement per action group (`group_disagreement`), `normalization_sigma` and edge-triggered `gripper_flips`, pure and causal; `TriggerSettings` in `settings.py`, new key `trigger.disagreement_stride`.
+- `scripts/trigger_signal_check.py`: d(t) after each perturbation against the same dev seed unperturbed (paired, identical up to the perturbation step); `configs/sweeps/review_nominal.yaml` rolls out those counterparts.
+- Tests on synthetic chunk streams: zero disagreement for consistent chunks, a plan change shows once in its group, sigma and window, flip edges and refractory period.
+- Q7 and Q8 accepted (decisions.md); implemented in the next version.
+
 ## [0.3.00] M2: labels, perturbations, episode store, 3070 server runner (Nov 25, 2026)
 - `sim/state.py`, `sim/labels.py`, `sim/perturb.py`: privileged state, failure labels (D-16) and the four perturbations (D-18, D-19); `rollout/store.py` writes the spec section 2 format with frame-aligned arrays and `held`/`contact` (D-17); `rollout/sweep.py` and the `rollout` stage expand sweep cells into seeded episodes, resumable and sharded.
 - Physics substep hook in `AlohaSim.step`, used by the knock to stop pushing when the grip breaks; top camera rendered alone (bit-identical to M1, about 25% faster).
