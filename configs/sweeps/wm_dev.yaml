@@ -1,0 +1,8 @@
+# M4 code check: unperturbed transfer_cube episodes on dev seeds 2000-2109. A dev world model is
+# trained on 2010-2109 and scored on the review episodes (2000-2009, perturbed and unperturbed).
+# Dev only, never reported; the reported world model is trained on the `train` split (D-22).
+name: wm_dev
+tasks: [transfer_cube]
+cells:
+  - {perturbation: none, split: dev, episodes: 110}
+stages: [rollout]

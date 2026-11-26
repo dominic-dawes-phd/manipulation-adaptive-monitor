@@ -10,6 +10,12 @@ What changed in the code, data formats and experiment tooling, newest first. Rat
 
 Each entry is 3–6 bullets and names its date.
 
+## [1.2.00] M4 world-model monitor (Nov 26, 2026)
+- `monitors/wm.py`: frozen DINOv2 ViT-S/14 from a pinned torch.hub commit (mean patch token), residual MLP predictor of z_t from z_{t-k-L+1..t-k} and a_{t-k..t-1}, cosine-residual training with an episode-level validation split, causal score 1 - cos(ẑ_t, z_t), save/load.
+- `WmSettings`; `base.yaml` `monitors.wm` gains `encoder_repo`, `encode_batch`, `hidden_dim`, `val_fraction`, `seed`; encoder default switched to `dinov2_vits14` because DINOv3 is gated (D-25).
+- `scripts/wm_dev_check.py` and `configs/sweeps/wm_dev.yaml`: dev-seed acceptance check (train on 100 unperturbed dev episodes, score the review episodes against their counterparts).
+- Tests on synthetic latents: window indexing, learning, causality of scores, save/load round trip.
+
 ## [1.1.00] M3 VLM judge and sanity gate tooling (Nov 26, 2026)
 - `monitors/vlm.py`: client for a vLLM OpenAI-compatible server; score = P(No) / (P(Yes) + P(No)) from first-token logprobs, case and whitespace variants pooled; cache by (model, prompt, frame) in JSON lines; identical frames sent once; failed requests logged and scored NaN, never cached.
 - `scripts/serve_vlm.sh` (separate `~/amon/venv-vlm`, vLLM 0.34.0; `requirements/vlm_freeze.txt`), `scripts/vlm_sanity.py` (paired frame set from dev review episodes and their unperturbed counterparts, blind contact sheet, AUROC and latency), `eval/stats.py: auroc`.

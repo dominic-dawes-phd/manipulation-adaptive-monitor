@@ -127,6 +127,24 @@ class VlmSettings:
 
 
 @dataclass(frozen=True)
+class WmSettings:
+    """World-model monitor (spec section 6.2)."""
+
+    encoder: str
+    encoder_repo: str
+    encode_batch: int
+    history: int
+    horizon: int
+    hidden_dim: int
+    grid_stride: int
+    epochs: int
+    batch_size: int
+    lr: float
+    val_fraction: float
+    seed: int
+
+
+@dataclass(frozen=True)
 class Settings:
     """All parameters used by the implemented milestones."""
 
@@ -141,6 +159,7 @@ class Settings:
     stats: StatsSettings
     trigger: TriggerSettings
     vlm: VlmSettings
+    wm: WmSettings
 
 
 def load_settings(
@@ -199,6 +218,7 @@ def load_settings(
         stats=StatsSettings(**raw["stats"]),
         trigger=TriggerSettings(**raw["trigger"]),
         vlm=VlmSettings(**raw["monitors"]["vlm"]),
+        wm=WmSettings(**raw["monitors"]["wm"]),
     )
     _validate(settings)
     return settings

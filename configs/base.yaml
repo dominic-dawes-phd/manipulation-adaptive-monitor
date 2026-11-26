@@ -109,13 +109,20 @@ monitors:
     max_num_seqs: 4
     gpu_memory_utilization: 0.95
   wm:
-    encoder: dinov3_vits16       # fallback: dinov2_vits14
-    history: 4
-    horizon: 8
+    # DINOv3 weights are gated (manual approval on Hugging Face), so the fallback is the default
+    # until access is granted (D-04, D-25). torch.hub entry point, pinned to a repo commit.
+    encoder: dinov2_vits14
+    encoder_repo: facebookresearch/dinov2:7764ea0f912e53c92e82eb78a2a1631e92725fc8
+    encode_batch: 128
+    history: 4                   # L, latents fed to the predictor
+    horizon: 8                   # k, steps predicted ahead
+    hidden_dim: 512
     grid_stride: 1
     epochs: 30
     batch_size: 256
     lr: 3.0e-4
+    val_fraction: 0.1            # training episodes held out to report validation loss
+    seed: 0
 
 schedules:
   care_period_steps: 50          # VERIFY against CARE paper (decisions Q1)
