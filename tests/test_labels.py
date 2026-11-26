@@ -116,9 +116,35 @@ def test_earliest_event_labels_the_episode() -> None:
     phase[50:] = 2
     held = _held((50, 120))
     contact = held.copy()
-    arguments = (phase, held, contact, _open_gripper_actions(), SETTINGS.labels, SETTINGS.robot)
+    arguments = (
+        phase,
+        held,
+        contact,
+        _open_gripper_actions(),
+        SETTINGS.labels,
+        SETTINGS.robot,
+        "none",
+        -1,
+    )
     assert label_failure("transfer_cube", False, *arguments) == FailureEvent("drop", 120)
     assert label_failure("transfer_cube", True, *arguments) == FailureEvent("none", -1)
     nothing = np.zeros_like(held)
     empty = (np.zeros_like(phase), nothing, nothing, *arguments[3:])
     assert label_failure("transfer_cube", False, *empty) == FailureEvent("unlabeled", -1)
+
+
+def test_perturbed_failures_are_attributed_by_timing() -> None:
+    """Q8: an event before the perturbation; Q7: no event soon after it; else the event wins."""
+    phase = np.zeros(STEPS, dtype=np.int8)
+    phase[50:] = 2
+    held = _held((50, 120))
+    base = (phase, held, held.copy(), _open_gripper_actions(), SETTINGS.labels, SETTINGS.robot)
+    window = SETTINGS.labels.perturbation_event_window
+    expected = {
+        120: FailureEvent("failed_before_perturbation", 120),
+        110: FailureEvent("drop", 120),
+        119 - window: FailureEvent("knock", 120 - window),
+        -1: FailureEvent("drop", 120),
+    }
+    for perturb_step, event in expected.items():
+        assert label_failure("transfer_cube", False, *base, "knock", perturb_step) == event

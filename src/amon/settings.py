@@ -60,6 +60,7 @@ class LabelSettings:
     handover_window: int
     insert_window: int
     mid_subtask_margin: int
+    perturbation_event_window: int
 
 
 @dataclass(frozen=True)

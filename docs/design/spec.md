@@ -32,7 +32,7 @@ One directory per episode: `episodes/<task>/<perturbation>/<split>/ep_<seed:06d>
 
 Alignment (D-17): every array except `reward` describes frame t, before action t is applied; `reward[t]` is the outcome of action t.
 
-`meta.json`: episode id, task, perturbation name and sampled parameters, `perturb_step` (−1 if none), `success`, `onset_step` (−1 if none or unlabeled), `failure_type` (`none`, `drop`, `grasp_miss`, `handover_miss`, `insert_miss`, `unlabeled`), `boundary_steps` (list), seed, split, `sim_version`. Native-resolution video is optional (`video.mp4`, for viz only).
+`meta.json`: episode id, task, perturbation name and sampled parameters, `perturb_step` (−1 if none), `success`, `onset_step` (−1 if none or unlabeled), `failure_type` (`none`, `drop`, `grasp_miss`, `handover_miss`, `insert_miss`, `unlabeled`, `failed_before_perturbation`, or a perturbation name; section 4), `boundary_steps` (list), seed, split, `sim_version`. Native-resolution video is optional (`video.mp4`, for viz only).
 
 Scores live in `scores/<monitor>/<episode_id>.npz`: `grid_steps` [N] int, `score` [N] float32, plus `meta.json` with model hash, prompt hash, and measured `latency_ms` (mean and p95).
 
@@ -50,9 +50,14 @@ A failure event is detected from sim state. An object is *held* by an arm when e
 
 For a failed episode, `onset_step` = the earliest event after which success is never reached. Failed episodes with no detected event get `failure_type = unlabeled`: they count toward recall but have no delay.
 
+For perturbed episodes whose perturbation fired (Q7, Q8 in decisions.md):
+- **failed_before_perturbation:** the earliest event is visible before the first perturbed frame (onset ≤ `perturb_step`). Onset = that event. Excluded from perturbation metrics, like episodes where the perturbation did not fire.
+- **perturbation-attributed:** no event with onset ≤ `perturb_step` + W_p (`perturbation_event_window`). `failure_type` = the perturbation name, onset = `perturb_step` + 1 (the first frame that shows it). These have a delay and are reported apart from sim-labeled onsets.
+- Otherwise the earliest event within that window labels the episode.
+
 Perturbed episodes that still succeed go in the **recovered** bucket. They are excluded from both recall and false-alarm rate, and reported on their own.
 
-All thresholds (h_hold, d, W_g, W_h, W_i) are in `configs/base.yaml`. Labels must be checked against videos (HANDOFF M2).
+All thresholds (h_hold, d, W_g, W_h, W_i, W_p) are in `configs/base.yaml`. Labels must be checked against videos (HANDOFF M2).
 
 ## 5. Perturbations
 

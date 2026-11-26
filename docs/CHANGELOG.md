@@ -10,6 +10,11 @@ What changed in the code, data formats and experiment tooling, newest first. Rat
 
 Each entry is 3–6 bullets and names its date.
 
+## [1.0.00] Perturbation-aware failure labels, Q7 and Q8 (Nov 26, 2026)
+- MAJOR: `label_failure` takes the perturbation and `perturb_step`. An event visible before the first perturbed frame gives `failed_before_perturbation` (Q8); no event within `labels.perturbation_event_window` = 50 steps of the perturbation gives `failure_type` = the perturbation name with onset `perturb_step + 1` (Q7). Episodes stored by earlier versions carry the old labels; regenerate before comparing.
+- On the M2 review episodes, the new rules relabel 11 of 50: 5 `unlabeled` and 2 late drops of peg_misalign, 1 late `handover_miss` of a knock and 2 late labels of nudges become perturbation-attributed, and insertion knock seed 2007 becomes `failed_before_perturbation`.
+- Spec sections 2 and 4 updated; label test covers both rules and the unperturbed path.
+
 ## [0.4.00] Trigger features and the dev signal check (Nov 26, 2026)
 - `trigger/features.py`: spec section 8 disagreement per action group (`group_disagreement`), `normalization_sigma` and edge-triggered `gripper_flips`, pure and causal; `TriggerSettings` in `settings.py`, new key `trigger.disagreement_stride`.
 - `scripts/trigger_signal_check.py`: d(t) after each perturbation against the same dev seed unperturbed (paired, identical up to the perturbation step); `configs/sweeps/review_nominal.yaml` rolls out those counterparts.

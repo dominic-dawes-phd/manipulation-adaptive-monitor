@@ -70,6 +70,7 @@ labels:
   handover_window: 200          # successful handovers take 77-181 steps (D-16)
   insert_window: 150
   mid_subtask_margin: 25
+  perturbation_event_window: 50 # no sim event this soon after a perturbation: onset = perturb_step + 1 (Q7)
 
 perturbations:                  # knock, slip and nudge values: scripts/calibrate_perturbations.py
   knock: {force_n: 5.0, steps: 10, direction: random, delay_max: 30}

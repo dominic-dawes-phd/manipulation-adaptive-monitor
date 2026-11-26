@@ -61,6 +61,8 @@ def save_episode(
         trace.action_exec,
         settings.labels,
         settings.robot,
+        key.perturbation,
+        trace.perturb_step,
     )
     meta = {
         "episode_id": key.episode_id,

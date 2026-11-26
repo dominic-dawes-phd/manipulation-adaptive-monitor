@@ -117,8 +117,15 @@ def label_failure(
     action_exec: np.ndarray,
     labels: LabelSettings,
     robot: RobotSettings,
+    perturbation: str,
+    perturb_step: int,
 ) -> FailureEvent:
     """Labels one episode with its earliest failure event.
+
+    For a perturbed episode whose perturbation fired (Q7, Q8): an event visible before the first
+    perturbed frame `perturb_step + 1` gives `failed_before_perturbation`; if no event follows
+    within `labels.perturbation_event_window` steps, the failure is attributed to the
+    perturbation itself, with `failure_type` = the perturbation name and onset `perturb_step + 1`.
 
     Returns:
         `none` for successes, `unlabeled` for failures without an event (both with onset -1).
@@ -135,6 +142,15 @@ def label_failure(
         events += find_stage_timeout(
             "insert_miss", phase, HANDOVER_STAGE, INSERT_STAGE, labels.insert_window, True
         )
+    if perturbation != "none" and perturb_step >= 0:
+        before = [event for event in events if event.onset <= perturb_step]
+        if before:
+            return FailureEvent("failed_before_perturbation", min(before, key=_onset_of).onset)
+        deadline = perturb_step + labels.perturbation_event_window
+        caused = [event for event in events if event.onset <= deadline]
+        if not caused:
+            return FailureEvent(perturbation, perturb_step + 1)
+        return min(caused, key=_onset_of)
     if not events:
         return FailureEvent("unlabeled", -1)
     return min(events, key=_onset_of)
