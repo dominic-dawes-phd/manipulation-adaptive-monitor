@@ -1,0 +1,120 @@
+# Every default parameter. Loaded by src/amon/settings.py.
+# Names and units under tasks and robot were verified against gym-aloha 0.1.1 in M0.
+# Values still marked VERIFY are checked in the milestone that first uses them.
+
+project:
+  name: adaptive-monitoring
+  control_hz: 50
+
+tasks:
+  transfer_cube:
+    env_id: gym_aloha/AlohaTransferCube-v0
+    obs_type: pixels_agent_pos
+    episode_len: 400              # checkpoint train_config.json; the gym registration default is 300
+    success_reward: 4             # gym-aloha also terminates the episode at this reward (D-13)
+    policy_repo: lerobot/act_aloha_sim_transfer_cube_human
+    policy_revision: ba73b2766f1371cdc133ca4efb97eb090d744625
+    published_success_rate: 0.83
+    published_per_episode: true   # eval_info.json: 500 episodes, seeds 1000-1499
+    objects:
+      cube: {body: box, joint: red_box_joint, geoms: [red_box], rest_height_m: 0.0200}
+  insertion:
+    env_id: gym_aloha/AlohaInsertion-v0
+    obs_type: pixels_agent_pos
+    episode_len: 400
+    success_reward: 4
+    policy_repo: lerobot/act_aloha_sim_insertion_human
+    policy_revision: 33259aa86eb45fdf85350280044a33d9d50e40c3
+    published_success_rate: 0.206
+    published_per_episode: false  # its eval_info.json is a copy of transfer_cube's
+    objects:
+      peg: {body: peg, joint: red_peg_joint, geoms: [red_peg], rest_height_m: 0.0099}
+      socket:
+        body: socket
+        joint: blue_socket_joint
+        geoms: [socket-1, socket-2, socket-3, socket-4, pin]
+        rest_height_m: 0.0219
+
+robot:
+  action_dim: 14
+  groups:                         # gym_aloha/constants.py ACTIONS: left arm first
+    left_arm: [0, 1, 2, 3, 4, 5]
+    left_grip: [6]
+    right_arm: [7, 8, 9, 10, 11, 12]
+    right_grip: [13]
+  gripper_close_threshold: 0.5    # normalized, 0 closed, 1 open; actuator range is 0.065-0.975
+  finger_geoms:
+    right: [vx300s_right/10_left_gripper_finger, vx300s_right/10_right_gripper_finger]
+    left: [vx300s_left/10_left_gripper_finger, vx300s_left/10_right_gripper_finger]
+  reward_finger_geoms:            # the reward stages test only this one finger per arm
+    right: vx300s_right/10_right_gripper_finger
+    left: vx300s_left/10_left_gripper_finger
+
+render:
+  camera: top
+  store_size: [224, 224]
+  store_video: false
+
+splits:                         # seed ranges, half-open [start, end)
+  train: [0, 500]
+  baseline: [1000, 1200]        # M1 success rates only; seeds of the published evaluation
+  dev: [2000, 2200]             # review videos and perturbation tuning; never reported
+  calib: [10000, 11000]         # insertion needs 750 (DOE section 5)
+  test: [20000, 20300]
+  perturbed_test_start: 30000   # per perturbation: start + 1000 * perturbation_index
+
+labels:
+  hold_margin_m: 0.02           # held = finger contact + this far above rest_height_m (D-16)
+  drop_debounce_steps: 5        # firm grasps lose contact for 1-2 steps
+  grasp_miss_window: 10
+  handover_window: 200          # successful handovers take 77-181 steps (D-16)
+  insert_window: 150
+  mid_subtask_margin: 25
+
+perturbations:                  # knock, slip and nudge values: scripts/calibrate_perturbations.py
+  knock: {force_n: 5.0, steps: 10, direction: random, delay_max: 30}
+  slip: {friction_scale: 0.01, steps: 20, delay_max: 20}
+  nudge: {offset_m: 0.05, trigger_radius_m: 0.06, delay_max: 0}
+  peg_misalign: {angle_deg: [10, 20], delay_max: 20}
+
+policy:
+  shadow_query_stride: 1
+  executor: from_checkpoint      # reproduce config.json eval behavior
+
+trigger:
+  disagreement_window: 20
+  gripper_lookahead: 10
+  gripper_refractory: 25
+  timeout_steps: 100
+  min_gap_steps: 5
+  progress_probe: false
+
+monitors:
+  vlm:
+    model: Qwen/Qwen2.5-VL-7B-Instruct-AWQ
+    fallback_model: Qwen/Qwen2.5-VL-3B-Instruct-AWQ
+    grid_stride: 5
+    max_pixels: 200704           # 448*448
+    temperature: 0.0
+    endpoint: http://127.0.0.1:8000/v1
+    sanity_auroc_gate: 0.75
+  wm:
+    encoder: dinov3_vits16       # fallback: dinov2_vits14
+    history: 4
+    horizon: 8
+    grid_stride: 1
+    epochs: 30
+    batch_size: 256
+    lr: 3.0e-4
+
+schedules:
+  care_period_steps: 50          # VERIFY against CARE paper (decisions Q1)
+  random_draws: 20
+  budgets: [0.05, 0.10, 0.20, 0.30, 0.50]
+
+calibration:
+  alphas: [0.05, 0.10]
+
+stats:
+  bootstrap_resamples: 10000
+  ci: 0.95

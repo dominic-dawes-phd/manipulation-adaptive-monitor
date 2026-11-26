@@ -1,0 +1,5 @@
+You are monitoring a two-arm robot in simulation. The task: the right arm picks up the red cube and hands it to the left arm, which holds it in the air.
+
+Look at the image. Is the task still on track? Answer "No" if the cube has been dropped, knocked away, missed by the gripper, or is lying on the table after it was picked up. Otherwise answer "Yes".
+
+Answer with exactly one word: Yes or No.

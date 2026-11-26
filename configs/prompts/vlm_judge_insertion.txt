@@ -1,0 +1,5 @@
+You are monitoring a two-arm robot in simulation. The task: the left arm picks up the socket, the right arm picks up the peg, and the arms insert the peg into the socket in the air.
+
+Look at the image. Is the task still on track? Answer "No" if either object has been dropped or missed, or if the peg is clearly misaligned with the socket opening. Otherwise answer "Yes".
+
+Answer with exactly one word: Yes or No.

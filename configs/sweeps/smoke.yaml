@@ -1,0 +1,14 @@
+# End-to-end plumbing check: a few episodes per cell, every stage.
+name: smoke
+tasks: [transfer_cube]
+cells:
+  - {perturbation: none, split: train, episodes: 4}
+  - {perturbation: none, split: calib, episodes: 4}
+  - {perturbation: none, split: test, episodes: 2}
+  - {perturbation: knock, split: test, episodes: 2}
+  - {perturbation: slip, split: test, episodes: 2}
+  - {perturbation: nudge, split: test, episodes: 2}
+monitors: [wm]          # add vlm once its server is up
+stages: [rollout, train_wm, score_wm, evaluate, plot]
+overrides:
+  monitors.wm.epochs: 1

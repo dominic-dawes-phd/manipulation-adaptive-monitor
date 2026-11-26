@@ -1,0 +1,10 @@
+# M2: perturbed episodes for visual review, on dev seeds that are never reported.
+name: review
+tasks: [transfer_cube, insertion]
+store_video: true
+cells:
+  - {perturbation: knock, split: dev, episodes: 10}
+  - {perturbation: slip, split: dev, episodes: 10, tasks: [transfer_cube]}
+  - {perturbation: nudge, split: dev, episodes: 10, tasks: [transfer_cube]}
+  - {perturbation: peg_misalign, split: dev, episodes: 10, tasks: [insertion]}
+stages: [rollout]
