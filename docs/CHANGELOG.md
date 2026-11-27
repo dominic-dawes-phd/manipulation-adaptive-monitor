@@ -10,6 +10,11 @@ What changed in the code, data formats and experiment tooling, newest first. Rat
 
 Each entry is 3–6 bullets and names its date.
 
+## [1.3.01] UMBC chip batch job (Nov 26, 2026)
+- `server/chip_job.sbatch`: one Slurm job on chip-gpu (4 GPUs, one node) that runs setup, check, smoke and pilot in order, with `STEPS` to choose them. It keeps caches in the group space (home quota is 500 MB) and refuses mixed GPU models.
+- Chip's GPUs are not RTX 3070s, so results from this job are a separate hardware group and cannot be pooled with the 3070 server (D-09). The decision is recorded in `design/decisions.md` once the hardware is confirmed.
+- Tooling only: no change to metrics, episode format or labels, so earlier results stay comparable.
+
 ## [1.3.00] Monitor stages and the 3070 server runbook (Nov 26, 2026)
 - `experiments.run` stages `train_wm`, `score_wm` and `score_vlm` (`monitors/stages.py`). Scores go to `scores/<monitor>/<episode_id>.npz`, plus a per-shard meta with model hashes and the latency measured on that GPU. The stages resume, and `--endpoint` is wired through.
 - World-model input is area-resized to `monitors.wm.input_size` (224 px), so 448 px frames can be stored for the VLM (D-26). New keys: `monitors.vlm.latency_sample`, `monitors.wm.latency_repeats`, `server.*`.
