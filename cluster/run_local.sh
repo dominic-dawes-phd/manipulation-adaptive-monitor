@@ -77,7 +77,8 @@ run_stage_shard() {
 STAGES="$(python -c "import yaml,sys; print(' '.join(yaml.safe_load(open(sys.argv[1]))['stages']))" "$SPEC")"
 for STAGE in $STAGES; do
   echo "[run_local] stage $STAGE started $(date +%H:%M:%S)"
-  if [[ "$STAGE" == "train_wm" || "$STAGE" == "evaluate" || "$STAGE" == "plot" ]]; then
+  if [[ "$STAGE" == "train_wm" || "$STAGE" == "baseline_report" || "$STAGE" == "evaluate" \
+    || "$STAGE" == "plot" ]]; then
     STAGE_GPUS=("${GPUS[0]}")
   elif [[ "$STAGE" == "score_vlm" || "$STAGE" == "score_wm" ]]; then
     # One shard per GPU: both stages time their monitor, and a shared GPU would inflate latency.

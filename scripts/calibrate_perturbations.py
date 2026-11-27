@@ -117,7 +117,7 @@ def main() -> None:
         if arguments.only and name not in arguments.only:
             continue
         task = base.tasks[task_name]
-        sim = AlohaSim(task)
+        sim = AlohaSim(task, base.render)
         traces = sorted((arguments.baseline / "baseline" / task_name).glob("ep_*.npz"))
         # Nominal successes only, so that every failure is caused by the perturbation.
         traces = [path for path in traces if bool(np.load(path)["success"])][: arguments.trials]

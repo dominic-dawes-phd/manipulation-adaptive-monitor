@@ -44,7 +44,7 @@ def run_baseline(
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     pending = [seed for seed in seeds if not _trace_path(out_dir, seed).exists()]
-    sim = AlohaSim(task)
+    sim = AlohaSim(task, settings.render)
     policy = ActAdapter(task)
     reader = StateReader(sim.physics, task, settings)
     failed: list[int] = []

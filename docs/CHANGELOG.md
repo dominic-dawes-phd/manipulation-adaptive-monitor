@@ -10,6 +10,12 @@ What changed in the code, data formats and experiment tooling, newest first. Rat
 
 Each entry is 3–6 bullets and names its date.
 
+## [2.0.00] Rendering without multisampling, for bit-identical frames (Nov 26, 2026)
+- **Breaks comparability:** `render.offsamples: 0` (new key) turns off MuJoCo's 4× multisample anti-aliasing. On NVIDIA EGL it made repeated renders of one state differ by a grey level, so seeds did not replay (D-29). Every earlier episode was rendered with multisampling.
+- `AlohaSim(task, render)` now takes the render settings and applies `offsamples` before the first render. All callers are updated.
+- New test `test_rendering_the_same_state_is_deterministic` renders one state 9 times.
+- `server/chip_job.sbatch` runs on RTX 6000 nodes only (the L40S nodes cannot render), accepts any sweep name as a step, and sets `PACK_HOST` so `pack.sh` prints the login host. `run_local.sh` runs `baseline_report` once. `docs/chip.md` is the chip runbook.
+
 ## [1.3.01] UMBC chip batch job (Nov 26, 2026)
 - `server/chip_job.sbatch`: one Slurm job on chip-gpu (4 GPUs, one node) that runs setup, check, smoke and pilot in order, with `STEPS` to choose them. It keeps caches in the group space (home quota is 500 MB) and refuses mixed GPU models.
 - Chip's GPUs are not RTX 3070s, so results from this job are a separate hardware group and cannot be pooled with the 3070 server (D-09). The decision is recorded in `design/decisions.md` once the hardware is confirmed.

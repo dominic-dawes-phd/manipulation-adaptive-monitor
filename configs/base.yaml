@@ -54,6 +54,7 @@ render:
   camera: top
   store_size: [224, 224]
   store_video: false
+  offsamples: 0                 # MSAA samples; 4 (MuJoCo default) is not bit-reproducible on NVIDIA EGL (D-29)
 
 splits:                         # seed ranges, half-open [start, end)
   train: [0, 500]

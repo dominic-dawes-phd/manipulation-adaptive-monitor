@@ -29,7 +29,7 @@ def main() -> int:
     settings = load_settings()
     mismatches = 0
     for name, task in settings.tasks.items():
-        sim = AlohaSim(task)
+        sim = AlohaSim(task, settings.render)
         policy = ActAdapter(task)
         reader = StateReader(sim.physics, task, settings)
         paths = sorted((arguments.baseline / "baseline" / name).glob("ep_*.npz"))

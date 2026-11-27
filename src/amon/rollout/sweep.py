@@ -70,7 +70,7 @@ def run_rollouts(
         ]
         if not pending:
             continue
-        sim = AlohaSim(task)
+        sim = AlohaSim(task, settings.render)
         policy = ActAdapter(task)
         reader = StateReader(sim.physics, task, settings)
         start = time.monotonic()

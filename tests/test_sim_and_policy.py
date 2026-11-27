@@ -17,6 +17,7 @@ from amon.sim.state import StateReader
 
 SETTINGS = load_settings()
 SEED = 1001
+RENDER_REPEATS = 8  # the multisampling flicker changed 1-2 pixels in about half of the renders
 needs_cuda = pytest.mark.skipif(not torch.cuda.is_available(), reason="needs a GPU")
 
 
@@ -29,7 +30,7 @@ def task_name(request: pytest.FixtureRequest) -> str:
 @pytest.fixture(scope="module")
 def sim(task_name: str) -> Iterator[AlohaSim]:
     """Provides one environment per task."""
-    environment = AlohaSim(SETTINGS.tasks[task_name])
+    environment = AlohaSim(SETTINGS.tasks[task_name], SETTINGS.render)
     yield environment
     environment.close()
 
@@ -83,6 +84,15 @@ def test_reset_is_deterministic(sim: AlohaSim) -> None:
     second = sim.reset(SEED)
     assert np.array_equal(first.image, second.image)
     assert np.array_equal(first.agent_pos, second.agent_pos)
+
+
+def test_rendering_the_same_state_is_deterministic(sim: AlohaSim) -> None:
+    """Repeated renders of one state are bit-identical (multisampling breaks this, D-29)."""
+    sim.reset(SEED)
+    assert sim.physics.model.vis.quality.offsamples == SETTINGS.render.offsamples
+    first = sim.render("top")
+    for _ in range(RENDER_REPEATS):
+        assert np.array_equal(sim.render("top"), first)
 
 
 def test_settings_match_checkpoint_eval_config(task_name: str) -> None:

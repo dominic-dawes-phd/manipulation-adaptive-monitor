@@ -4,7 +4,8 @@
 #   bash server/pack.sh runs/pilot_<stamp>              # writes runs/pilot_<stamp>.tar
 #   bash server/pack.sh runs/main_<stamp> --no-frames   # without episodes/ (scores and models only)
 #
-# data.npz files are already compressed, so the archive is a plain tar.
+# data.npz files are already compressed, so the archive is a plain tar. PACK_HOST names the host the
+# laptop copies from (default: this machine; a Slurm job sets the login host).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 RUN_DIR="${1%/}"
@@ -19,5 +20,5 @@ tar -cf "$TARBALL" -C "$(dirname "$RUN_DIR")" "${EXCLUDES[@]}" "$NAME"
 echo "packed: $TARBALL ($(du -h "$TARBALL" | cut -f1))"
 echo
 echo "On the laptop (Git Bash or WSL, in the repository folder):"
-echo "  scp $USER@$(hostname -f):$(realpath "$TARBALL")* runs/"
+echo "  scp $USER@${PACK_HOST:-$(hostname -f)}:$(realpath "$TARBALL")* runs/"
 echo "  (cd runs && sha256sum -c $NAME.tar.sha256 && tar -xf $NAME.tar)"

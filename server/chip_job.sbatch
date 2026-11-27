@@ -9,9 +9,12 @@
 #   sbatch server/chip_job.sbatch                      # setup, check, smoke, pilot
 #   STEPS="setup check smoke" sbatch server/chip_job.sbatch
 #   STEPS="pilot" sbatch server/chip_job.sbatch        # after smoke has passed
+#   STEPS="baseline" sbatch server/chip_job.sbatch     # any configs/sweeps/<name>.yaml is a step
 #
-# Results from chip (L40S) are a different hardware group from the 8x RTX 3070 server and
-# must not be pooled with it (D-09). The job refuses to run if its GPUs are of mixed models.
+# Only the g20 nodes (Quadro RTX 6000) have NVIDIA's EGL library; the g24 nodes (L40S) cannot
+# render the simulator, hence --constraint=RTX_6000. Results from chip are a different hardware
+# group from the 8x RTX 3070 server and must not be pooled with it (D-09, D-29). The job refuses
+# to run if its GPUs are of mixed models.
 #SBATCH --job-name=amon
 #SBATCH --clusters=chip-gpu
 #SBATCH --partition=gpu
@@ -19,6 +22,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:4
+#SBATCH --constraint=RTX_6000
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=128G
 #SBATCH --time=12:00:00
@@ -29,6 +33,7 @@ cd "$SLURM_SUBMIT_DIR"
 # Keep every cache off the 500 MB home quota.
 export AMON_HOME=/umbc/rs/pi_cmat/users/ddawes2/amon
 export XDG_CACHE_HOME="$AMON_HOME/cache"
+export PACK_HOST=chip.rs.umbc.edu  # the compute node is not reachable from the laptop
 # These GPUs are not RTX 3070s, so the scripts' 3070 check must be bypassed. The mixed-model check
 # below keeps a run to one GPU model.
 export ALLOW_OTHER_GPU=1
@@ -51,13 +56,13 @@ for STEP in $STEPS; do
     check)
       bash run_3070_server.sh --check "$GPUS_IN_JOB"
       ;;
-    smoke | pilot)
+    *)
+      if [[ ! -f "configs/sweeps/$STEP.yaml" ]]; then
+        echo "[chip] ERROR: unknown step '$STEP' (setup, check, or a configs/sweeps/<name>.yaml)"
+        exit 1
+      fi
       bash run_3070_server.sh "configs/sweeps/$STEP.yaml" "$GPUS_IN_JOB"
       bash server/pack.sh "$(ls -td "runs/${STEP}_"* | head -1)"
-      ;;
-    *)
-      echo "[chip] ERROR: unknown step '$STEP' (use setup, check, smoke, pilot)"
-      exit 1
       ;;
   esac
 done

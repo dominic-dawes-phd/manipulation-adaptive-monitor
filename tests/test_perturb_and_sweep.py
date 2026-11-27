@@ -18,7 +18,7 @@ SEED = 2000
 @pytest.fixture(scope="module")
 def sim() -> Iterator[AlohaSim]:
     """Provides a transfer_cube environment."""
-    environment = AlohaSim(SETTINGS.tasks["transfer_cube"])
+    environment = AlohaSim(SETTINGS.tasks["transfer_cube"], SETTINGS.render)
     yield environment
     environment.close()
 
@@ -26,7 +26,7 @@ def sim() -> Iterator[AlohaSim]:
 @pytest.fixture(scope="module")
 def insertion_sim() -> Iterator[AlohaSim]:
     """Provides an insertion environment."""
-    environment = AlohaSim(SETTINGS.tasks["insertion"])
+    environment = AlohaSim(SETTINGS.tasks["insertion"], SETTINGS.render)
     yield environment
     environment.close()
 

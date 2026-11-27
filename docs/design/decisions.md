@@ -2,6 +2,10 @@
 
 Dated entries, newest first. Each entry states what was chosen, what was rejected and why. **PROPOSED** entries need the user's confirmation before they produce reported results.
 
+## Nov 26, 2026 (UMBC chip and anti-aliasing)
+
+- **D-29 Render without multisampling: `render.offsamples: 0` (ACCEPTED; using chip for reported results is PROPOSED, user).** On UMBC chip (Quadro RTX 6000, driver 610.57, NVIDIA EGL), the server check failed: `test_reset_is_deterministic` and the shadow-query test failed, and the 6 dev episodes differed between GPUs. MuJoCo's default 4× multisampling caused it. Rendering one unchanged state 6 times gave 2–3 distinct images, with 1–2 pixels differing by one grey level; the physics state was bit-identical. With `offsamples=0`, every render was bit-identical. The policy reads the image, so the flicker changes an action and the episode diverges. After the change, the full server check passed on chip (job 301445), and the policy still performs as published (job 301466, seeds 1000–1199, `runs/baseline_20261126-232249` on chip): transfer_cube 173/200 = 86.5% [81.1, 90.6] against 167/200 published on the same seeds (exact McNemar p = 0.238), insertion 43/200 = 21.5% against the card's 20.6%. Frames change at object edges, so every earlier episode is incomparable (version 2.0.00). Rejected: keeping multisampling and accepting non-bit-identical replays, which breaks rules 1 and 3; software rendering (osmesa), which is about 5× slower (D-12) and gives different pixels again. Only chip's g20 nodes (RTX 6000) can render; the g24 nodes (L40S) have only Mesa's EGL, so `server/chip_job.sbatch` requests `--constraint=RTX_6000`. Chip would be a new hardware group (D-09); whether it replaces the 3070 server for reported results (D-22) is the user's call.
+
 ## Nov 26, 2026 (server runbook and the first server round)
 
 The user runs the server without Claude Code: the server has internet but no sudo. The user chose 448 px pilot frames and both monitors in the first round.

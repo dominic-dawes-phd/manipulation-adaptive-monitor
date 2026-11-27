@@ -1,6 +1,6 @@
 # Running experiments on the 8× RTX 3070 server
 
-Everything reported in the paper comes from this machine (D-22), and it has no Claude Code. Every step below is a command to copy and paste. Results come back to the laptop as one tar file per run.
+Everything reported in the paper comes from this machine (D-22), and it has no Claude Code. For the UMBC chip Slurm cluster, see `docs/chip.md`. Every step below is a command to copy and paste. Results come back to the laptop as one tar file per run.
 
 You need:
 - a shell account on the server with internet access (no sudo);

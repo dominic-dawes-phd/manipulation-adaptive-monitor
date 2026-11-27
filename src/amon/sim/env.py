@@ -16,7 +16,7 @@ import numpy as np
 from dm_control import mujoco
 from gym_aloha.tasks.sim import BimanualViperXTask
 
-from amon.settings import TaskSettings
+from amon.settings import RenderSettings, TaskSettings
 
 SubstepHook = Callable[[mujoco.Physics], None]
 IMAGE_HEIGHT, IMAGE_WIDTH = 480, 640  # fixed by the checkpoints' input features
@@ -43,8 +43,14 @@ class StepResult:
 class AlohaSim:
     """A seeded gym-aloha environment with access to the physics state."""
 
-    def __init__(self, task: TaskSettings) -> None:
-        """Creates the environment with the checkpoint's own evaluation settings."""
+    def __init__(self, task: TaskSettings, render: RenderSettings) -> None:
+        """Creates the environment with the checkpoint's own evaluation settings.
+
+        Args:
+            task: The task and its checkpoint.
+            render: Rendering settings; `offsamples` must be set before the first render, because
+                dm_control creates its offscreen buffer from the model on first use.
+        """
         self._env = gym.make(
             task.env_id,
             obs_type=task.obs_type,
@@ -53,6 +59,8 @@ class AlohaSim:
         )
         # gym-aloha renders three cameras per step and returns one.
         self._env.unwrapped._env.task.get_observation = _top_camera_observation
+        # Multisampled frames differ by a grey level between renders on NVIDIA EGL (D-29).
+        self.physics.model.vis.quality.offsamples = render.offsamples
 
     @property
     def physics(self) -> mujoco.Physics:

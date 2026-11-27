@@ -84,6 +84,7 @@ class RenderSettings:
 
     store_size: tuple[int, int]
     store_video: bool
+    offsamples: int  # multisample anti-aliasing of the offscreen buffer; 0 is deterministic
 
 
 @dataclass(frozen=True)
@@ -204,6 +205,7 @@ def load_settings(
         render=RenderSettings(
             store_size=tuple(raw["render"]["store_size"]),
             store_video=raw["render"]["store_video"],
+            offsamples=raw["render"]["offsamples"],
         ),
         splits={
             name: (bounds[0], bounds[1])
