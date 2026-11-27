@@ -34,10 +34,10 @@ export MUJOCO_GL=egl                     # headless rendering
 
 # VLM server (separate environment)
 uv venv .venv-vlm --python 3.11
-.venv-vlm/bin/pip install vllm           # version pinned in docs/design/decisions.md after M0
+uv pip sync -p .venv-vlm/bin/python requirements/vlm_freeze.txt   # driver >= 580, else vlm_cu12.txt
 
 # Weights (ACT checkpoints, VLM, encoder) into $HF_HOME
-bash scripts/fetch_models.sh
+python scripts/fetch_models.py --out model_revisions.json
 ```
 
 Check the install:
@@ -57,13 +57,11 @@ python -m experiments.run --spec configs/sweeps/baseline.yaml --stage all
 python -m experiments.run --spec configs/sweeps/smoke.yaml --stage all
 ```
 
-The VLM stages need a server. Start it in the VLM environment, one per GPU, each on its own port:
+The VLM stage needs a server. `cluster/run_local.sh` starts one per GPU by itself; to start one by hand (model, pixel cap and serving limits from `monitors.vlm` in `base.yaml`):
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 .venv-vlm/bin/vllm serve Qwen/Qwen2.5-VL-7B-Instruct-AWQ \
-  --port 8000 --max-model-len 4096 --gpu-memory-utilization 0.92 \
-  --limit-mm-per-prompt '{"image": 1}'   # flag syntax differs across vLLM versions: check --help
-curl -s localhost:8000/health && python scripts/vlm_sanity.py --endpoint http://127.0.0.1:8000/v1
+CUDA_VISIBLE_DEVICES=0 VLM_VENV=.venv-vlm bash scripts/serve_vlm.sh
+curl -s localhost:8000/health && python scripts/vlm_sanity.py score --set runs/vlm_sanity_<stamp>
 ```
 
 ## 3. All GPUs on one machine (no Slurm)
@@ -78,16 +76,18 @@ Shard logs go to `runs/<name>_<stamp>/logs/shard_<i>.out` and to the terminal wi
 
 ## 3b. The 8x RTX 3070 server (no Slurm)
 
-One command installs the locked environment (`requirements/server_3070.txt`, same versions as the laptop) into `~/amon-3070`, checks that the GPUs are RTX 3070s, runs the test suite including the determinism tests, and runs the sweep with two processes per GPU:
+All reported data comes from this server (D-22). The step-by-step guide, written to be followed without Claude Code, is **`docs/server.md`**. In short:
 
 ```bash
-git clone <this repository> && cd manipulation-adaptive-monitor
-bash run_3070_server.sh --check                       # first time: install and test only
+bash server/setup.sh                                  # once: both environments and all weights
+bash run_3070_server.sh --check                       # tests, cross-GPU determinism, VLM fit
 tmux new -s amon
-bash run_3070_server.sh configs/sweeps/pilot.yaml     # all GPUs; add 0,1,2,3 for some
+bash run_3070_server.sh configs/sweeps/smoke.yaml     # all GPUs; add 0,1,2,3 for some
+bash run_3070_server.sh configs/sweeps/pilot.yaml
+bash server/pack.sh runs/pilot_<stamp>                # prints the scp line for the laptop
 ```
 
-`PROCS_PER_GPU`, `AMON_HOME` and `ALLOW_OTHER_GPU` are documented at the top of the script. Results go to `runs/` on the server; copy them back with `bash cluster/pack_results.sh runs/<run>`. They are never pooled with laptop runs (D-09).
+`PROCS_PER_GPU`, `AMON_HOME`, `RUN_DIR` and `ALLOW_OTHER_GPU` are documented at the top of `run_3070_server.sh`. Server results are never pooled with laptop runs (D-09).
 
 ## 4. University Slurm cluster
 

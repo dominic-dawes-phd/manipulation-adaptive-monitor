@@ -72,7 +72,7 @@ adaptive-monitoring/
     viz.py              episode video with overlays
   cluster/              cluster.env, setup.sh, submit.sh, job.sbatch,
                         run_local.sh, collect.sh, pack_results.sh
-  scripts/              check.sh, fetch_models.sh, vlm_sanity.py
+  scripts/              check.sh, fetch_models.py, vlm_sanity.py
   tests/
   docs/
     CHANGELOG.md, DOE.md

@@ -17,18 +17,18 @@ from pathlib import Path
 
 import matplotlib
 import numpy as np
-import torch
 
 from amon.monitors.wm import (
     device,
     encode_frames,
     load_encoder,
+    measure_check_latency,
     save_predictor,
     score_episode,
     train_predictor,
 )
 from amon.rollout.manifest import write_manifest
-from amon.settings import REPO_ROOT, Settings, load_settings
+from amon.settings import REPO_ROOT, load_settings
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402  (the backend must be chosen first)
@@ -38,7 +38,6 @@ TRAIN_FIRST_SEED = 2010
 WINDOW = 20
 PLOT_RANGE = (-30, 60)
 SIM_EVENTS = ("drop", "grasp_miss")
-LATENCY_REPEATS = 50
 
 
 def main() -> None:
@@ -144,31 +143,10 @@ def main() -> None:
     figure.savefig(run_dir / "figures" / "wm_score_after_onset.png", dpi=120)
     plt.close(figure)
 
-    latency_ms = check_latency(encoder, predictor, nominal[train_seeds[0]], settings)
+    latency_ms = float(np.median(measure_check_latency(encoder, predictor, settings.wm)))
     summary = {"val_losses": val_losses, "latency_ms_per_check": latency_ms, "groups": rows}
     (run_dir / "eval" / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     logging.info("latency %.1f ms per check on %s; wrote %s", latency_ms, device(), run_dir)
-
-
-def check_latency(
-    encoder: torch.nn.Module,
-    predictor: torch.nn.Module,
-    episode: tuple[np.ndarray, np.ndarray],
-    settings: Settings,
-) -> float:
-    """Returns the median ms to encode one frame and score it, as in a live check."""
-    latents, actions = episode
-    height, width = settings.render.store_size
-    frame = np.zeros((1, height, width, 3), dtype=np.uint8)
-    durations = []
-    for _ in range(LATENCY_REPEATS):
-        start = time.perf_counter()
-        encode_frames(encoder, frame, 1)
-        score_episode(predictor, latents[:13], actions[:13], settings.wm)
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
-        durations.append(1000.0 * (time.perf_counter() - start))
-    return float(np.median(durations))
 
 
 if __name__ == "__main__":

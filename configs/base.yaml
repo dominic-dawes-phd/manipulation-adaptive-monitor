@@ -100,6 +100,7 @@ monitors:
     temperature: 0.0
     endpoint: http://127.0.0.1:8000/v1
     sanity_auroc_gate: 0.75
+    latency_sample: 50           # grid frames sent one at a time to measure latency, per shard
     top_logprobs: 20             # first-token alternatives searched for Yes/No
     concurrency: 8               # parallel requests; vLLM batches them on the server
     request_timeout_s: 120
@@ -113,6 +114,7 @@ monitors:
     # until access is granted (D-04, D-25). torch.hub entry point, pinned to a repo commit.
     encoder: dinov2_vits14
     encoder_repo: facebookresearch/dinov2:7764ea0f912e53c92e82eb78a2a1631e92725fc8
+    input_size: [224, 224]       # stored frames are area-resized to this before encoding (D-26)
     encode_batch: 128
     history: 4                   # L, latents fed to the predictor
     horizon: 8                   # k, steps predicted ahead
@@ -123,6 +125,11 @@ monitors:
     lr: 3.0e-4
     val_fraction: 0.1            # training episodes held out to report validation loss
     seed: 0
+    latency_repeats: 50          # live checks timed per shard
+
+server:                          # read by the shell scripts in server/ and cluster/run_local.sh
+  vlm_health_timeout_s: 900      # seconds to wait for a vLLM server to load its model
+  vlm_base_port: 8100            # the score_vlm shard i serves on base + i
 
 schedules:
   care_period_steps: 50          # VERIFY against CARE paper (decisions Q1)

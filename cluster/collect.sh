@@ -12,7 +12,7 @@ SUMMARY="$RUN_DIR/summary.txt"
   grep -h "status=" "$RUN_DIR"/logs/*.out 2>/dev/null || echo "(no status lines found)"
   echo
   echo "== failed episodes =="
-  grep -h "EPISODE_FAILED" "$RUN_DIR"/logs/*.out 2>/dev/null | sort -u || true
+  grep -hE "EPISODE_FAILED|SCORE_FAILED" "$RUN_DIR"/logs/*.out 2>/dev/null | sort -u || true
   FAILED_IDS=$(grep -h "EPISODE_FAILED" "$RUN_DIR"/logs/*.out 2>/dev/null \
     | sed -E 's/.*EPISODE_FAILED ([^ ]+).*/\1/' | sort -u | paste -sd, - || true)
   if [[ -n "$FAILED_IDS" ]]; then

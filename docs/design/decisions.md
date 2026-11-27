@@ -2,6 +2,14 @@
 
 Dated entries, newest first. Each entry states what was chosen, what was rejected and why. **PROPOSED** entries need the user's confirmation before they produce reported results.
 
+## Nov 26, 2026 (server runbook and the first server round)
+
+The user runs the server without Claude Code: the server has internet but no sudo. The user chose 448 px pilot frames and both monitors in the first round.
+
+- **D-26 448 px frames in the pilot; the world model sees 224 px (ACCEPTED, user).** The pilot and smoke specs override `render.store_size` to [448, 448]. The VLM gets the stored frame, capped by `max_pixels` (448²). The world model area-resizes it to `monitors.wm.input_size` [224, 224], the input of its dev check (D-25). Storage is about 11 MB per episode instead of 4.2 MB, about 4 GB for the pilot. Rejected: 224 px, because the 7B VLM's dev AUROC was 0.52 at 224 px against 0.71 at 448 px (D-24). The main sweep's size is decided after the user's labels settle the gate.
+- **D-27 The first server round stops at scores; `evaluate` runs later on the laptop (ACCEPTED).** M5 (schedules, calibration, metrics) is not built yet. Replay is a deterministic function of episodes, scores and the latency measured on the server, so it can run anywhere without breaking D-09. The pilot therefore runs `rollout, train_wm, score_wm, score_vlm` now. Rejected: waiting for M5 before the pilot, which would delay the yields that size the main sweep. Also rejected: scoring on the laptop, because latency must come from the 3070.
+- **D-28 The server's VLM environment depends on its driver (ACCEPTED).** Driver 580 or newer uses `requirements/vlm_freeze.txt` (vLLM 0.34.0, CUDA 13), the laptop's environment. An older driver uses `requirements/vlm_cu12.txt` (vLLM 0.11.0, torch 2.8.0 for CUDA 12.8, hashed). Both serve the same model files with the same flags, but the vLLM version is part of the monitor. On the laptop, the 3B scored the 46 frames of the 448 px set at 181 ms median under vLLM 0.11. Its frame scores differed from vLLM 0.34 by up to 0.06, and its AUROC was 0.40 against 0.35 (sim labels). Every VLM score file therefore records it, and all VLM scores of one comparison come from one environment (D-09). `server/check.sh` tries the 7B, then the 7B with `--enforce-eager`, then the 3B, and records which one loaded. Rejected: requiring a driver update (no sudo), and building vLLM from source.
+
 ## Nov 26, 2026 (after M2: next steps and the trigger signal check)
 
 The user approved the plan for M3 onward: a trigger signal check first, then Q7/Q8, the VLM gate (M3), the world model (M4), and M5.

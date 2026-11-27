@@ -19,10 +19,10 @@ uv venv "$VENV_SIM" --python 3.11
 VIRTUAL_ENV="$VENV_SIM" uv pip install -e ".[dev]"
 
 uv venv "$VENV_VLM" --python 3.11
-VIRTUAL_ENV="$VENV_VLM" uv pip install vllm
+VIRTUAL_ENV="$VENV_VLM" uv pip sync requirements/vlm_freeze.txt   # driver >= 580; else vlm_cu12.txt
 
 source "$VENV_SIM/bin/activate"
-bash scripts/fetch_models.sh "$HF_HOME"
+python scripts/fetch_models.py --out "$DATA_DIR/model_revisions.json"
 
 {
   echo "date: $(date -Is)"

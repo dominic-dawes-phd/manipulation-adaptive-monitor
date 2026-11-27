@@ -118,6 +118,7 @@ class VlmSettings:
     temperature: float
     endpoint: str
     sanity_auroc_gate: float
+    latency_sample: int
     top_logprobs: int
     concurrency: int
     request_timeout_s: float
@@ -132,6 +133,7 @@ class WmSettings:
 
     encoder: str
     encoder_repo: str
+    input_size: tuple[int, int]
     encode_batch: int
     history: int
     horizon: int
@@ -142,6 +144,7 @@ class WmSettings:
     lr: float
     val_fraction: float
     seed: int
+    latency_repeats: int
 
 
 @dataclass(frozen=True)
@@ -218,7 +221,9 @@ def load_settings(
         stats=StatsSettings(**raw["stats"]),
         trigger=TriggerSettings(**raw["trigger"]),
         vlm=VlmSettings(**raw["monitors"]["vlm"]),
-        wm=WmSettings(**raw["monitors"]["wm"]),
+        wm=WmSettings(
+            **{**raw["monitors"]["wm"], "input_size": tuple(raw["monitors"]["wm"]["input_size"])}
+        ),
     )
     _validate(settings)
     return settings

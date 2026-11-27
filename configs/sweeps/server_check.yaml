@@ -1,0 +1,10 @@
+# Determinism and VLM check of a new machine (server/check.sh). Dev seeds only; never reported.
+# Rolled out twice, on two GPUs; the second copy is also scored by the VLM to measure latency.
+name: server_check
+tasks: [transfer_cube, insertion]
+cells:
+  - {perturbation: none, split: dev, episodes: 2}
+  - {perturbation: knock, split: dev, episodes: 1}
+stages: [rollout]
+overrides:
+  render.store_size: [448, 448]

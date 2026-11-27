@@ -1,14 +1,17 @@
-# End-to-end plumbing check: a few episodes per cell, every stage.
+# End-to-end plumbing check on the server: a few episodes per cell, every implemented stage.
+# Never reported. evaluate and plot are added when M5 lands (D-27).
 name: smoke
-tasks: [transfer_cube]
+tasks: [transfer_cube, insertion]
 cells:
-  - {perturbation: none, split: train, episodes: 4}
+  - {perturbation: none, split: train, episodes: 8, tasks: [transfer_cube]}
   - {perturbation: none, split: calib, episodes: 4}
   - {perturbation: none, split: test, episodes: 2}
   - {perturbation: knock, split: test, episodes: 2}
-  - {perturbation: slip, split: test, episodes: 2}
-  - {perturbation: nudge, split: test, episodes: 2}
-monitors: [wm]          # add vlm once its server is up
-stages: [rollout, train_wm, score_wm, evaluate, plot]
+  - {perturbation: slip, split: test, episodes: 2, tasks: [transfer_cube]}
+  - {perturbation: nudge, split: test, episodes: 2, tasks: [transfer_cube]}
+  - {perturbation: peg_misalign, split: test, episodes: 2, tasks: [insertion]}
+monitors: [vlm, wm]
+stages: [rollout, train_wm, score_wm, score_vlm]
 overrides:
+  render.store_size: [448, 448]   # pilot frame size (D-26)
   monitors.wm.epochs: 1

@@ -6,6 +6,7 @@ the latents z_{t-k-L+1..t-k} and the executed actions a_{t-k..t-1} to ẑ_t. The
 """
 
 import logging
+import time
 from pathlib import Path
 
 import numpy as np
@@ -201,6 +202,30 @@ def score_episode(
         residual = cosine_residual(predicted, torch.from_numpy(latents[steps]).to(device()))
     scores[steps] = residual.cpu().numpy()
     return scores
+
+
+def measure_check_latency(
+    encoder: nn.Module, predictor: LatentPredictor, settings: WmSettings
+) -> np.ndarray:
+    """Times `latency_repeats` live checks: encode one frame and predict one latent.
+
+    Returns:
+        The duration of each check in ms.
+    """
+    height, width = settings.input_size
+    frame = np.zeros((1, height, width, 3), dtype=np.uint8)
+    window = settings.history + settings.horizon
+    latents = np.zeros((window, predictor.network[-1].out_features), dtype=np.float32)
+    actions = np.zeros((window, predictor.action_mean.shape[0]), dtype=np.float32)
+    durations = []
+    for _ in range(settings.latency_repeats):
+        start = time.perf_counter()
+        encode_frames(encoder, frame, 1)
+        score_episode(predictor, latents, actions, settings)
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        durations.append(1000.0 * (time.perf_counter() - start))
+    return np.array(durations)
 
 
 def save_predictor(path: Path, predictor: LatentPredictor) -> None:

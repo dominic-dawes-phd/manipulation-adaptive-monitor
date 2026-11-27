@@ -10,6 +10,14 @@ What changed in the code, data formats and experiment tooling, newest first. Rat
 
 Each entry is 3–6 bullets and names its date.
 
+## [1.3.00] Monitor stages and the 3070 server runbook (Nov 26, 2026)
+- `experiments.run` stages `train_wm`, `score_wm` and `score_vlm` (`monitors/stages.py`). Scores go to `scores/<monitor>/<episode_id>.npz`, plus a per-shard meta with model hashes and the latency measured on that GPU. The stages resume, and `--endpoint` is wired through.
+- World-model input is area-resized to `monitors.wm.input_size` (224 px), so 448 px frames can be stored for the VLM (D-26). New keys: `monitors.vlm.latency_sample`, `monitors.wm.latency_repeats`, `server.*`.
+- `server/setup.sh`: no-sudo install of both environments and all weights, chosen by driver version. `requirements/vlm_cu12.txt` adds vLLM 0.11.0 on CUDA 12.8 for drivers below 580 (D-28). `scripts/fetch_models.py` replaces `fetch_models.sh`.
+- `server/check.sh`: test suite, cross-GPU bit-identity (`scripts/compare_runs.py`, `sweeps/server_check.yaml`) and VLM fit with fallbacks. Sweeps refuse to run until it passes for the current commit.
+- `cluster/run_local.sh`: vLLM via `scripts/serve_vlm.sh` and `scripts/vlm_lib.sh`, with a health timeout and cleanup on Ctrl+C. `RUN_DIR` continues an interrupted run. `server/pack.sh` adds checksums. `docs/server.md` is the runbook.
+- Smoke and pilot specs: 448 px frames and the four implemented stages; `evaluate` and `plot` follow M5 (D-27).
+
 ## [1.2.00] M4 world-model monitor (Nov 26, 2026)
 - `monitors/wm.py`: frozen DINOv2 ViT-S/14 from a pinned torch.hub commit (mean patch token), residual MLP predictor of z_t from z_{t-k-L+1..t-k} and a_{t-k..t-1}, cosine-residual training with an episode-level validation split, causal score 1 - cos(ẑ_t, z_t), save/load.
 - `WmSettings`; `base.yaml` `monitors.wm` gains `encoder_repo`, `encode_batch`, `hidden_dim`, `val_fraction`, `seed`; encoder default switched to `dinov2_vits14` because DINOv3 is gated (D-25).

@@ -9,6 +9,7 @@ from pathlib import Path
 
 import yaml
 
+from amon.monitors.stages import score_vlm, score_wm, train_wm
 from amon.policy.act import enable_determinism
 from amon.rollout.baseline import report_baseline, run_baseline
 from amon.rollout.manifest import write_manifest
@@ -17,7 +18,7 @@ from amon.settings import REPO_ROOT, Settings, load_settings
 from amon.version import AMON_VERSION
 
 LOGGER = logging.getLogger("experiments.run")
-STAGES = ("baseline", "baseline_report", "rollout")
+STAGES = ("baseline", "baseline_report", "rollout", "train_wm", "score_wm", "score_vlm")
 
 
 def main() -> int:
@@ -36,6 +37,7 @@ def main() -> int:
     parser.add_argument(
         "--limit", type=int, help="run only the first N episodes (plumbing checks, never results)"
     )
+    parser.add_argument("--endpoint", help="VLM server URL ending in /v1 (score_vlm)")
     arguments = parser.parse_args()
     logging.basicConfig(
         level=logging.INFO,
@@ -70,6 +72,14 @@ def main() -> int:
             keys = expand_cells(spec, settings)[: arguments.limit][arguments.shard :: arguments.of]
             video = spec.get("store_video", settings.render.store_video)
             failed += len(run_rollouts(keys, run_dir, settings, video))
+        elif stage == "train_wm":
+            train_wm(run_dir, expand_cells(spec, settings)[: arguments.limit], settings)
+        elif stage == "score_wm":
+            keys = expand_cells(spec, settings)[: arguments.limit][arguments.shard :: arguments.of]
+            failed += score_wm(run_dir, keys, settings, arguments.shard)
+        elif stage == "score_vlm":
+            keys = expand_cells(spec, settings)[: arguments.limit][arguments.shard :: arguments.of]
+            failed += score_vlm(run_dir, keys, settings, arguments.endpoint, arguments.shard)
         elif stage == "baseline_report":
             summary = report_baseline(settings, spec["tasks"], run_dir)
             (run_dir / "eval" / "baseline_summary.txt").write_text(summary + "\n", encoding="utf-8")

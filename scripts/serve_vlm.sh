@@ -6,9 +6,9 @@
 #   scripts/serve_vlm.sh                 # monitors.vlm.model
 #   scripts/serve_vlm.sh <model> [extra vllm serve flags]
 #
-# Environment: VLM_VENV (default ~/amon/venv-vlm); CC (Triton compiles kernel launchers with a C
-# compiler; without root, `uv pip install ziglang` and a wrapper script that runs
-# `python -m ziglang cc "$@"` works).
+# Environment: VLM_VENV (default ~/amon/venv-vlm); VLM_PORT (default: the endpoint's port); CC
+# (Triton compiles kernel launchers with a C compiler; without root, server/setup.sh installs
+# `ziglang` and a wrapper script that runs `python -m ziglang cc "$@"`).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source "${VLM_VENV:-$HOME/amon/venv-vlm}/bin/activate"
@@ -24,6 +24,7 @@ port = urllib.parse.urlparse(vlm["endpoint"]).port
 print(vlm["model"], vlm["max_pixels"], vlm["top_logprobs"], port, vlm["max_model_len"],
       vlm["max_num_seqs"], vlm["gpu_memory_utilization"])
 ')
+PORT="${VLM_PORT:-$PORT}"
 MODEL="${1:-$DEFAULT_MODEL}"
 shift $(( $# > 0 ? 1 : 0 ))
 exec vllm serve "$MODEL" \

@@ -41,6 +41,10 @@ At an equal budget of expensive monitor checks per episode, does a cheap, policy
 
 Schedules, budgets, calibrations and ablations are offline factors: they cost no simulation.
 
+Held fixed, not factors:
+- **Hardware:** every reported episode, score and latency comes from the 8x RTX 3070 server (D-22). Its environments come from `server/setup.sh`, and `run_3070_server.sh --check` must pass first (`docs/server.md`).
+- **Frame size:** the pilot stores 448 px frames. The VLM sees them at that size; the world model sees them area-resized to 224 px (D-26). The main sweep's size is decided after the M3 gate.
+
 ## 5. Episode counts (to be resized after the pilot)
 
 | Task | Split / perturbation | Episodes | Use |
@@ -59,6 +63,7 @@ The rows sum to 1,700 transfer-cube and 1,450 insertion episodes. Measured in M1
 ## 6. Responses and analysis plan
 
 - Responses: spec §11.
+- Where it runs: rollouts, world-model training and both scoring stages run on the server; `evaluate` and `plot` replay the packed server results on the laptop (D-27).
 - Primary comparisons:
   - H1: ours vs fixed-k, ours vs random, at each B.
   - H2: ours vs care, ours vs boundary†, at their realized B, on `mid_subtask`.
@@ -79,3 +84,5 @@ The rows sum to 1,700 transfer-cube and 1,450 insertion episodes. Measured in M1
 | Nov 26, 2026 | `runs/vlm_sanity_20261126-130910` | 1.0.0 (dirty: M3 code) | `scripts/vlm_sanity.py`, 24 pairs from review + review_nominal at 224 px | laptop; vLLM 0.34.0 | M3 gate (D-24), sim-proposed labels: 7B AWQ AUROC 0.516 (0.644 upscaled to 448), 3B AWQ 0.632. Latency not representative (7B needed CPU offload). Awaiting the user's labels. |
 | Nov 26, 2026 | `runs/vlm_gate_448_20261126-133351`, `runs/vlm_sanity_20261126-134125` | 1.0.0 (dirty: M3 code) | `sweeps/vlm_gate_448.yaml`, dev seeds 2000-2009, 448 px frames; 23 pairs | laptop; vLLM 0.34.0 | M3 gate at native 448 px: 7B AWQ 0.709, 3B AWQ 0.352 (sim-proposed labels). Not reported. |
 | Nov 26, 2026 | `runs/wm_dev_20261126-135440`, `runs/wm_check_20261126-140702` | 1.1.0 (dirty: M4 code) | `sweeps/wm_dev.yaml` (dev seeds 2000-2109, unperturbed) and `scripts/wm_dev_check.py` | laptop | M4 acceptance (D-25): val loss 0.0077 -> 0.0053; mean score in the 20 steps after onset, perturbed vs same seed unperturbed: knock 0.0090 vs 0.0061 (peak higher 7/7), slip 0.0095 vs 0.0071 (8/9), nudge 0.0050 vs 0.0044 (5/6; the rise comes at the nudge, before the onset). 9.1 ms per check on the laptop GPU. Not reported. |
+| Nov 26, 2026 | `runs/server_check_20261126-201412` | 1.2.0 installed (dirty: 1.3 code) | `server/check.sh` on the laptop (`ALLOW_OTHER_GPU=1`, `EGL_PER_GPU=0`, `--gpu-memory-utilization 0.80`) | laptop; vLLM 0.34.0 | Tests of the server scripts, not results. Determinism PASS (same GPU twice). VLM fallback worked: 7B failed twice (no offload on the laptop), 3B loaded, 150-154 ms per request at 448 px. Tests FAIL because of a test-order bug: cuBLAS was initialized before `CUBLAS_WORKSPACE_CONFIG`. Fixed with `tests/conftest.py`. |
+| Nov 26, 2026 | `runs/server_check_20261126-202549`, `runs/smoke_20261126-202958` | 1.3.0 (dirty: uncommitted 1.3 code) | `server/check.sh` with `SKIP_VLM=1`, then `run_3070_server.sh` on `sweeps/smoke.yaml` with a 3B override | laptop; vLLM 0.34.0 | Check PASS. Smoke ran all four stages over 30 episodes, every status 0: 12 WM and 22 VLM score files. WM latency 29 ms with two shards sharing the GPU, so `score_wm` now runs one shard per GPU. Packed with `server/pack.sh`: 305 MB. Not reported. |

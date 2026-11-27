@@ -1,4 +1,5 @@
-# Measures throughput and validates the pipeline before the main sweep.
+# Measures yields and throughput and validates the pipeline before the main sweep.
+# evaluate and plot run later on the laptop from the packed results, once M5 lands (D-27).
 name: pilot
 tasks: [transfer_cube, insertion]
 cells:
@@ -10,4 +11,6 @@ cells:
   - {perturbation: nudge, split: test, episodes: 20, tasks: [transfer_cube]}
   - {perturbation: peg_misalign, split: test, episodes: 20, tasks: [insertion]}
 monitors: [vlm, wm]
-stages: [rollout, train_wm, score_wm, score_vlm, evaluate, plot]
+stages: [rollout, train_wm, score_wm, score_vlm]
+overrides:
+  render.store_size: [448, 448]   # keeps the VLM viable; the world model resizes to 224 (D-26)
